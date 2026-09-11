@@ -67,22 +67,22 @@ Règles structurelles appliquées :
 - **Contrôle du hasard** : kappa de Cohen (3 catégories), kappa médian 0,12.
 - **Lecture graphique** : MDS classique sur la distance 1 − accord (Jacobi 12×12), sans
   interprétation politique des axes.
-- Résultats de référence : plus proches **RN–UDR 82,8 %**, **EPR–DEM 81,1 %**,
-  **ECOS–GDR 77,9 %**, **LFI-NFP–ECOS 76,2 %** ; plus éloignés **ECOS–UDR 21,7 %**,
-  **SOC–UDR 24,0 %**, **LFI-NFP–DR 24,5 %**. Ces regroupements émergent des votes seuls, sans
+- Résultats de référence : plus proches **RN–UDR 83,9 %**, **EPR–DEM 82,0 %**,
+  **ECOS–GDR 78,1 %**, **LFI-NFP–GDR 76,8 %** ; plus éloignés **ECOS–UDR 21,6 %**,
+  **LFI-NFP–DR 23,8 %**, **SOC–UDR 24,4 %**. Ces regroupements émergent des votes seuls, sans
   aucune information politique injectée — c'est un contrôle de cohérence fort.
 
 ## 5. Tests de robustesse effectués
 
 - **7 variantes de méthode** par paire : uniforme, plafond thème seul, participation seule, sans
   déduplication, positions officielles AN, seuils de participation 25 % et 50 %.
-- **Leave-one-theme-out** : retrait d'un thème entier (90 thèmes), recalcul des 66 paires.
+- **Leave-one-theme-out** : retrait d'un thème entier (24 thèmes), recalcul des 66 paires.
 - **Sous-échantillons** : 5 périodes (semestres), 3 types de scrutin.
 - **Bootstrap** : 300 rééchantillonnages avec remise, graine fixe `20270901`, percentiles 5–95 et
   stabilité du rang (1 = paire la plus proche sur 66).
 - **Résultat affiché** pour chaque paire : intervalle min–max toutes variantes + intervalle
   bootstrap + rangs. Une paire dont le rang bouge fortement apparaît comme fragile.
-- **Tests logiciels** : 36 tests unitaires et d'intégration (parsing, positions, déduplication,
+- **Tests logiciels** : 39 tests unitaires et d'intégration (parsing, positions, déduplication,
   pondérations, kappa, MDS, bootstrap déterministe, base réelle, exports du site), tous verts.
   Vérification indépendante du JavaScript du site contre les exports (tolérance arrondi), et
   comparaison manuelle base ↔ pages officielles AN sur les scrutins 218 et 3824 : identique.
@@ -141,5 +141,5 @@ Règles structurelles appliquées :
 - Base réelle : `data/france-votes.db` (SQLite, 154 Mo).
 - Pipeline reproductible : `pipeline/` (`run_all.py`, `download.py`, `build_db.py`, `score.py`).
 - Méthodologie : `docs/METHODOLOGIE.md` + page site ; audit : `docs/AUDIT.md`.
-- Tests : `pipeline/tests/` (36 tests, verts) + `pipeline/check_site.mjs`.
+- Tests : `pipeline/tests/` (39 tests, verts) + `pipeline/check_site.mjs`.
 - Sources : `data/manifest.json` (URL, date, taille, SHA-256, MD5).

@@ -9,17 +9,7 @@
       "bytes": 26317479,
       "md5": "d2d62edf46f3544502a815afc623423b",
       "sha256": "e9df96b2af759070b5c624a1cc6ae91cbc1863b81cfee1f2ea21b60a94ac851f",
-      "retrieved_at": "2026-09-11T23:17:46+00:00"
-    },
-    {
-      "name": "Acteurs, mandats et organes (AN)",
-      "file": "ActeursOrganes17.json.zip",
-      "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/amo/deputes_senateurs_ministres_legislature/AMO20_dep_sen_min_tous_mandats_et_organes.json.zip",
-      "page": "https://data.assemblee-nationale.fr/acteurs/deputes-senateurs-ministres-de-la-legislature",
-      "bytes": 2544833,
-      "md5": "1c7edabbe859f596b31a672f0df04477",
-      "sha256": "8401e895268f51ff29dc00f602bf3a05282f5d6be84a545df2fcd66485645dc2",
-      "retrieved_at": "2026-09-11T19:58:57+00:00"
+      "retrieved_at": "2026-09-11T23:55:17+00:00"
     },
     {
       "name": "Dossiers législatifs (AN)",
@@ -29,7 +19,7 @@
       "bytes": 10305544,
       "md5": "eafdead7c4d6bdae85787a70fbbd6092",
       "sha256": "eaff79d8349d01d94927b5bd832687144d8b394e15deb373603d12d78a10997e",
-      "retrieved_at": "2026-09-11T23:17:46+00:00"
+      "retrieved_at": "2026-09-11T23:55:17+00:00"
     },
     {
       "name": "Dossiers législatifs et thèmes (Sénat, base Dosleg)",
@@ -39,7 +29,7 @@
       "bytes": 3622331,
       "md5": "daee9a2ea0ab8225b6f8b2d8d36095f4",
       "sha256": "9a192b5af288eca2135521d46e0825e407b1dd634cc5e8a2cc334a86988bc640",
-      "retrieved_at": "2026-09-11T23:17:46+00:00"
+      "retrieved_at": "2026-09-11T23:55:17+00:00"
     }
   ]
 }

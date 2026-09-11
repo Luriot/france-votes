@@ -119,13 +119,15 @@ const VV = (() => {
 
   /* --- Calcul des accords (même formule que le pipeline) --------------- */
 
-  function pairStats(scrutins, a, b) {
+  function pairStats(scrutins, a, b, opts = {}) {
     const ia = state.meta.groupes.findIndex((g) => g.sigle === a);
     const ib = state.meta.groupes.findIndex((g) => g.sigle === b);
+    const skipAbstention = opts.excludeAbstention === true;
     let num = 0, den = 0, n = 0;
     for (const s of scrutins) {
       const pa = s.p[ia], pb = s.p[ib];
       if (pa === null || pb === null) continue;
+      if (skipAbstention && (pa === 0 || pb === 0)) continue;
       n += 1;
       const w = s.b * s.f * Math.min(s.q[ia], s.q[ib]);
       if (w > 0) {
@@ -136,12 +138,12 @@ const VV = (() => {
     return { accord: den > 0 ? num / den : null, n, poids: den };
   }
 
-  function allPairs(scrutins) {
+  function allPairs(scrutins, opts = {}) {
     const out = {};
     const groups = state.meta.groupes.map((g) => g.sigle);
     for (let i = 0; i < groups.length; i += 1) {
       for (let j = i + 1; j < groups.length; j += 1) {
-        out[`${groups[i]}|${groups[j]}`] = pairStats(scrutins, groups[i], groups[j]);
+        out[`${groups[i]}|${groups[j]}`] = pairStats(scrutins, groups[i], groups[j], opts);
       }
     }
     return out;

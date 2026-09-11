@@ -65,9 +65,6 @@ def fetch(url: str, dest: Path) -> None:
 def main(force: bool = False) -> int:
     RAW.mkdir(parents=True, exist_ok=True)
     entries = []
-    if MANIFEST.exists() and not force:
-        entries = json.loads(MANIFEST.read_text(encoding="utf-8")).get("sources", [])
-    by_file = {e["file"]: e for e in entries}
 
     for src in SOURCES:
         dest = RAW / src["file"]
@@ -78,17 +75,17 @@ def main(force: bool = False) -> int:
             fetch(src["url"], dest)
             time.sleep(1)
         md5, sha = checksums(dest)
-        by_file[src["file"]] = {
+        entries.append({
             **src,
             "bytes": dest.stat().st_size,
             "md5": md5,
             "sha256": sha,
             "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        }
+        })
         print(f"         {dest.stat().st_size} octets md5={md5}")
 
     MANIFEST.write_text(
-        json.dumps({"version": 1, "sources": list(by_file.values())}, indent=2, ensure_ascii=False) + "\n",
+        json.dumps({"version": 1, "sources": entries}, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     print(f"[ok] manifest -> {MANIFEST.relative_to(ROOT)}")

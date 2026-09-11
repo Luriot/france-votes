@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Questionnaire sur des votes réels — Votes 2027</title>
   <meta name="description" content="Indiquez votre position sur des scrutins réellement votés à l'Assemblée nationale et voyez quels groupes ont voté comme vous, avec le détail des votes qui pèsent.">
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -20,6 +20,10 @@
         <a href="questionnaire.html" aria-current="page">Questionnaire</a>
         <a href="methodologie.html">Méthodologie</a>
       </nav>
+      <form class="nav-search" action="votes.html" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
+        <button type="submit" class="ghost">Chercher</button>
+      </form>
     </div>
     <div class="ribbon" role="group" aria-label="Couverture des données">
       <span><b id="rb-scrutins">…</b></span>
@@ -65,7 +69,7 @@
     les positions des groupes sont recalculées depuis les listes de vote nominatives.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/questionnaire.js?v=5"></script>
+<script src="assets/app.js?v=7"></script>
+<script src="assets/questionnaire.js?v=7"></script>
 </body>
 </html>

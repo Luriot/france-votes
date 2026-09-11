@@ -12,6 +12,9 @@
   VV.setText("hero-pct", VV.fmtPct(state.meta.compteurs.scrutins_themes / state.meta.compteurs.scrutins));
   VV.setText("rb-doublons-meter", VV.fmtNum(state.meta.compteurs.doublons));
   VV.setText("data-date", VV.fmtDate(state.meta.data_built_at));
+  const segments = document.querySelectorAll(".meter .segments i");
+  const onCount = Math.round((state.meta.compteurs.scrutins_themes / state.meta.compteurs.scrutins) * segments.length);
+  segments.forEach((el, i) => el.classList.toggle("on", i < onCount));
 
   const themes = Object.entries(state.meta.compteurs.themes)
     .sort((a, b) => b[1] - a[1]);
@@ -28,6 +31,36 @@
 
   const selected = { a: "RN", b: "LFI-NFP" };
   let refGroup = "RN";
+  const elAbst = document.getElementById("f-abst");
+  let excludeAbst = elAbst?.checked === true;
+
+  // État partageable : ?a=RN&b=ECOS&theme=Budget&periode=2025-H2&abst=1
+  const params = new URLSearchParams(location.search);
+  if (sigles.includes(params.get("a"))) {
+    refGroup = params.get("a");
+    selected.a = refGroup;
+  }
+  if (sigles.includes(params.get("b")) && params.get("b") !== selected.a) selected.b = params.get("b");
+  if ([...selTheme.options].some((o) => o.value === params.get("theme"))) selTheme.value = params.get("theme");
+  if (periodes.includes(params.get("periode"))) selPeriod.value = params.get("periode");
+  if (params.get("abst") === "1" && elAbst) {
+    elAbst.checked = true;
+    excludeAbst = true;
+  }
+
+  function syncUrl() {
+    const p = new URLSearchParams();
+    p.set("a", selected.a);
+    p.set("b", selected.b);
+    if (selTheme.value) p.set("theme", selTheme.value);
+    if (selPeriod.value) p.set("periode", selPeriod.value);
+    if (excludeAbst) p.set("abst", "1");
+    history.replaceState(null, "", `${location.pathname}?${p}${location.hash}`);
+  }
+
+  function weightOpts() {
+    return { excludeAbstention: excludeAbst };
+  }
 
   function filtered() {
     const theme = selTheme.value;
@@ -43,6 +76,7 @@
     for (const s of scrutins) {
       const pa = s.p[ia], pb = s.p[ib];
       if (pa === null || pb === null) continue;
+      if (excludeAbst && (pa === 0 || pb === 0)) continue;
       total += 1;
       if (pa === pb) observed += 1;
       ca[pa] = (ca[pa] || 0) + 1;
@@ -62,7 +96,7 @@
   function renderGroups() {
     const grid = document.getElementById("group-grid");
     if (!grid) return;
-    const pairs = VV.allPairs(state.scrutins);
+    const pairs = VV.allPairs(state.scrutins, weightOpts());
     grid.innerHTML = groupes.map((g, gi) => {
       const determined = state.scrutins.filter((s) => s.p[gi] !== null);
       const participation = determined.length
@@ -81,6 +115,8 @@
         <dl>
           <dt>scrutins comptés</dt><dd>${VV.fmtNum(determined.length)}</dd>
           <dt>participation</dt><dd>${VV.fmtPct(participation)}</dd>
+          <dt>membres</dt><dd>${g.membres ?? "–"}</dd>
+          <dt>unité (Rice)</dt><dd>${g.cohesion === null || g.cohesion === undefined ? "–" : `${g.cohesion.toFixed(1).replace(".", ",")} %`}</dd>
           <dt>plus proche</dt><dd>${VV.esc(top?.sigle ?? "–")} · ${VV.fmtPct(top?.accord)}</dd>
           <dt>plus distant</dt><dd>${VV.esc(low?.sigle ?? "–")} · ${VV.fmtPct(low?.accord)}</dd>
         </dl>
@@ -117,7 +153,7 @@
     const list = document.getElementById("ranking");
     if (!list) return;
     const scrutins = filtered();
-    const pairs = VV.allPairs(scrutins);
+    const pairs = VV.allPairs(scrutins, weightOpts());
     const rows = sigles
       .filter((sigle) => sigle !== refGroup)
       .map((sigle) => ({ sigle, ...pairs[VV.pairKey(refGroup, sigle)] }))
@@ -145,7 +181,7 @@
   /* --- matrice --- */
   function renderMatrix() {
     const scrutins = filtered();
-    const pairs = VV.allPairs(scrutins);
+    const pairs = VV.allPairs(scrutins, weightOpts());
     const table = document.getElementById("matrix");
     table.innerHTML = "";
     const thead = document.createElement("thead");
@@ -240,7 +276,7 @@
 
   function showNeighbours(sigle) {
     const scrutins = filtered();
-    const pairs = VV.allPairs(scrutins);
+    const pairs = VV.allPairs(scrutins, weightOpts());
     const list = sigles
       .filter((s) => s !== sigle)
       .map((s) => ({ sigle: s, ...pairs[VV.pairKey(sigle, s)] }))
@@ -258,7 +294,7 @@
   function renderPair() {
     const scrutins = filtered();
     const key = VV.pairKey(selected.a, selected.b);
-    const stat = VV.pairStats(scrutins, selected.a, selected.b);
+    const stat = VV.pairStats(scrutins, selected.a, selected.b, weightOpts());
     const kap = kappa(scrutins, selected.a, selected.b);
     const rob = state.agreement.robustesse[key];
     const box = document.getElementById("pair-panel");
@@ -275,8 +311,8 @@
       byTheme[s.th].push(s);
     }
     const themeRows = Object.entries(byTheme)
-      .map(([theme, list]) => ({ theme, ...VV.pairStats(list, selected.a, selected.b) }))
-      .filter((x) => x.n >= 10 && x.accord !== null)
+      .map(([theme, list]) => ({ theme, ...VV.pairStats(list, selected.a, selected.b, weightOpts()) }))
+      .filter((x) => x.theme !== "Non classé" && x.n >= 10 && x.accord !== null)
       .sort((x, y) => y.accord - x.accord);
 
     const solid = themeRows.filter((x) => x.n >= 20);
@@ -286,6 +322,28 @@
       `de leurs ${VV.fmtNum(stat.n)} votes partagés` +
       (best ? ` — point de convergence maximal sur « ${VV.esc(best.theme)} » (${VV.fmtPct(best.accord)})` : "") +
       (worst && worst !== best ? `, désaccord maximal sur « ${VV.esc(worst.theme)} » (${VV.fmtPct(worst.accord)}).` : ".");
+
+    const periodsForPair = [...new Set(shared.map((s) => VV.period(s)))].sort();
+    const series = periodsForPair.map((p) => ({
+      p,
+      ...VV.pairStats(shared.filter((s) => VV.period(s) === p), selected.a, selected.b, weightOpts()),
+    })).filter((x) => x.accord !== null && x.n >= 5);
+    let spark = "";
+    if (series.length >= 2) {
+      const w = 280, h = 48, p = 5;
+      const values = series.map((x) => x.accord);
+      const min = Math.min(...values), max = Math.max(...values);
+      const sx = (i) => p + (i * (w - 2 * p)) / (series.length - 1);
+      const sy = (v) => h - p - ((v - min) / Math.max(1e-9, max - min)) * (h - 2 * p);
+      const points = series.map((x, i) => `${sx(i).toFixed(1)},${sy(x.accord).toFixed(1)}`).join(" ");
+      spark = `<div class="timeline">
+        <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Accord par période : ${series.map((x) => `${x.p} ${VV.fmtPct(x.accord)}`).join(", ")}">
+          <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"></polyline>
+          ${series.map((x, i) => `<circle cx="${sx(i).toFixed(1)}" cy="${sy(x.accord).toFixed(1)}" r="2.6" fill="var(--accent)"></circle>`).join("")}
+        </svg>
+        <p class="fineprint">Accord par période — ${series.map((x) => `${VV.esc(x.p)} : ${VV.fmtPct(x.accord)}`).join(" · ")}</p>
+      </div>`;
+    }
 
     const withWeights = shared.map((s) => {
       const w = s.b * s.f * Math.min(s.q[ia], s.q[ib]);
@@ -313,8 +371,8 @@
         </table></div>`
       : `<p class="loading">Pas assez de votes partagés par thème.</p>`;
 
-    const robBlock = isFiltered()
-      ? `<p class="loading" style="margin:.4rem 0 0">Analyse de robustesse complète disponible sans filtre (elle est précalculée sur l'ensemble des votes).</p>`
+    const robBlock = isFiltered() || excludeAbst
+      ? `<p class="loading" style="margin:.4rem 0 0">Analyse de robustesse complète disponible sans filtre ni exclusion des abstentions (elle est précalculée sur l'ensemble des votes, abstention comptée comme position).</p>`
       : `
         <div class="rangebar">
           <div class="r"><b>${VV.fmtPct(rob?.amplitude_min)} – ${VV.fmtPct(rob?.amplitude_max)}</b><span>intervalle selon les méthodes (pondérations, seuils, retrait d'un thème)</span></div>
@@ -335,6 +393,7 @@
         <a href="#votes">Voir les votes ci-dessous ↓</a>
       </div>
       <p class="note" style="margin:.6rem 0 0">${bilan}</p>
+      ${spark}
       ${robBlock}
       <h3 style="margin-top:1.3rem">Accord par thème</h3>
       <div class="theme-cols">
@@ -357,7 +416,7 @@
   }
 
   function renderVariants(key) {
-    if (isFiltered()) { document.getElementById("variants").innerHTML = ""; return; }
+    if (isFiltered() || excludeAbst) { document.getElementById("variants").innerHTML = ""; return; }
     const labels = {
       uniforme: "Poids uniforme (sans plafond ni participation)",
       thematique: "Plafond par thème seulement",
@@ -391,10 +450,16 @@
     renderRanking();
     renderPair();
     showNeighbours(selected.a);
+    syncUrl();
   }
 
   selTheme.addEventListener("change", renderAll);
   selPeriod.addEventListener("change", renderAll);
+  elAbst?.addEventListener("change", () => {
+    excludeAbst = elAbst.checked;
+    renderGroups();
+    renderAll();
+  });
   document.getElementById("f-reset").addEventListener("click", () => {
     selTheme.value = "";
     selPeriod.value = "";

@@ -84,6 +84,10 @@
     }).filter((g) => g.accord !== null).sort((a, b) => b.accord - a.accord);
 
     const best = perGroup[0];
+    if (!best) {
+      box.innerHTML = `<p class="loading">Aucune position de groupe déterminée sur les scrutins répondus pour l'instant.</p>`;
+      return;
+    }
     const drivers = (g, positive) => answered
       .map((q) => ({ q, gp: q.positions[groupes.findIndex((x) => x.sigle === g.sigle)], w: q.poids * q.parts[groupes.findIndex((x) => x.sigle === g.sigle)] }))
       .filter((x) => x.gp !== null && ((x.gp === answers.get(x.q.uid)) === positive))

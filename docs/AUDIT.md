@@ -119,7 +119,7 @@ fusionnées en une seule entité « UDR » dans le projet, avec traçabilité du
 | Groupe absent d'un vote | 9 092 cellules (9,0 %) | Position « non déterminée » ; exclue du calcul des paires, comptée dans la couverture affichée |
 | Égalité pour/contre dans un groupe | 1 918 cellules (1,9 %) | Position « non déterminée » (pas de majorité) |
 | Participation très faible (≤ 3 votants) | 23 213 cellules (22,9 %) | Pas de seuil arbitraire : **pondération par la participation** (min des participations des deux groupes de la paire), voir METHODOLOGIE.md |
-| Scrutins redondants (même vecteur de positions des 12 groupes) | 8 434 → 2 743 vecteurs uniques (5 691 doublons) | Déduplication déterministe : seule la première occurrence porte du poids ; les doublons restent consultables avec mention |
+| Scrutins redondants (même vecteur de positions des 12 groupes) | 8 434 → 3 150 vecteurs uniques (5 284 doublons neutralisés) | Déduplication déterministe : seule la première occurrence porte du poids ; les doublons restent consultables avec mention |
 | Renommage/changement de groupe | UDR (2 renommages), sinon stable sur la législature | Table de correspondance explicite, fusion UDR |
 | Changement de position d'un groupe dans le temps | géré nativement | Chaque scrutin porte la position du groupe à sa date |
 | Unanimité / votes peu informatifs | non filtré a priori | Aucun filtre éditorial : la pondération et la déduplication neutralisent mécaniquement les scrutins sans information discriminante |

@@ -71,6 +71,13 @@ const q = JSON.parse(files["questionnaire.json"]);
 check("questionnaire : positions sur 12 groupes", q.questions.every((x) => x.positions.length === 12));
 check("questionnaire : poids > 0", q.questions.every((x) => x.poids >= 0));
 check("questionnaire : scrutins présents dans scrutins.json", q.questions.every((x) => scrutinsByUid.has(x.uid)));
+check("marge exportée pour chaque scrutin", VV.state.scrutins.every((s) => Number.isInteger(s.m)));
+check("pivots valides", VV.state.scrutins.every((s) => Array.isArray(s.pv) && s.pv.every((i) => i >= 0 && i < 12)));
+check("effectifs et cohésion exportés",
+  VV.state.meta.groupes.every((g) => g.membres > 0 && g.cohesion > 0 && g.cohesion <= 100));
+const withAbst = VV.pairStats(VV.state.scrutins, "RN", "LFI-NFP");
+const noAbst = VV.pairStats(VV.state.scrutins, "RN", "LFI-NFP", { excludeAbstention: true });
+check("exclusion des abstentions recalcule", noAbst.n <= withAbst.n && typeof noAbst.accord === "number");
 
 // Sécurité du rendu : les données dynamiques doivent être neutralisées avant injection dans le DOM.
 const escaped = VV.esc('<img src=x onerror=alert(1)> "quotes" &');

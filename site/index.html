@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Votes 2027 — comment votent les groupes à l'Assemblée</title>
   <meta name="description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -20,6 +20,10 @@
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html">Méthodologie</a>
       </nav>
+      <form class="nav-search" action="votes.html" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
+        <button type="submit" class="ghost">Chercher</button>
+      </form>
     </div>
     <div class="ribbon" role="group" aria-label="Couverture des données">
       <span><b id="rb-scrutins">…</b></span>
@@ -87,6 +91,7 @@
         <select id="f-periode"><option value="">Toute la législature</option></select>
       </div>
       <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
+      <label class="check"><input type="checkbox" id="f-abst"> Exclure les abstentions du calcul</label>
     </div>
     <div class="card">
       <div class="ref-chips" id="ref-chips" role="group" aria-label="Groupe de référence"></div>
@@ -157,12 +162,13 @@
       </div>
     </div>
     <div class="bottom">
-      Données sous licence ouverte · IDL · les chiffres affichés proviennent de
-      <code>site/data/meta.json</code>, généré par le pipeline à chaque construction.
+      Données sous licence ouverte · les chiffres affichés proviennent de
+      <code>site/data/meta.json</code>, généré par le pipeline à chaque construction ·
+      <a href="https://github.com/Luriot/france-votes/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
     </div>
   </div>
 </footer>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/compare.js?v=5"></script>
+<script src="assets/app.js?v=7"></script>
+<script src="assets/compare.js?v=7"></script>
 </body>
 </html>

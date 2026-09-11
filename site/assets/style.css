@@ -104,6 +104,13 @@ nav.site a {
 }
 nav.site a:hover, nav.site a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
 @media (hover: hover) { nav.site:has(a:hover) a:not(:hover) { opacity: 0.35; } }
+.nav-search { display: flex; gap: 0.35rem; }
+.nav-search input { min-width: 12rem; padding: 0.42rem 0.7rem; font-size: 0.85rem; }
+.nav-search button { padding: 0.42rem 0.7rem; font-size: 0.85rem; }
+@media (max-width: 760px) {
+  .nav-search { flex-basis: 100%; }
+  .nav-search input { width: 100%; }
+}
 
 .ribbon {
   display: flex; flex-wrap: wrap; gap: 0.25rem 0; margin-top: 0.45rem;
@@ -196,6 +203,12 @@ select, input[type="search"] {
   border: var(--border) solid color-mix(in srgb, var(--ink) 35%, transparent);
   border-radius: var(--radius-small); background: var(--chalk); color: var(--ink); min-width: 10rem;
 }
+.check {
+  display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; padding-bottom: 0.45rem;
+}
+.check input { width: 1rem; height: 1rem; accent-color: var(--accent); }
+.timeline { margin: 0.9rem 0 0; max-width: 24rem; }
+.timeline svg { width: 100%; height: auto; overflow: visible; }
 button {
   font: inherit; font-size: 0.9rem; font-weight: 500; padding: 0.6rem 1.1rem; cursor: pointer;
   background: var(--chalk); color: var(--ink);

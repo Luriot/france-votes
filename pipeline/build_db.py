@@ -77,7 +77,8 @@ def load_senat_themes() -> tuple[dict[str, str], dict[str, str]]:
     by_url: dict[str, str] = {}
     by_title: dict[str, str] = {}
     for row in csv.DictReader(io.StringIO(text), delimiter=";"):
-        theme = (row.get("Thèmes") or "").strip()
+        raw = (row.get("Thèmes") or "").strip()
+        theme = raw.split(",")[0].strip()  # premier thème officiel du Sénat, comme documenté
         url = (row.get("URL du dossier") or "").strip().lower()
         title = norm(row.get("Titre") or "")
         if not theme:
@@ -101,7 +102,6 @@ def load_dossiers() -> tuple[dict[str, dict], dict[str, str], dict[str, list[str
             d = json.loads(z.read(name))["dossierParlementaire"]
             titre = (d.get("titreDossier") or {}).get("titre") or ""
             dossiers[d["uid"]] = {
-                "uid": d["uid"],
                 "legislature": str(d.get("legislature") or ""),
                 "titre": titre,
                 "senat_chemin": ((d.get("titreDossier") or {}).get("senatChemin") or "").strip().lower() or None,

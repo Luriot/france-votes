@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Méthodologie — Votes 2027</title>
   <meta name="description" content="Méthodologie complète, reproductible et auditable : sources, sélection des scrutins, pondérations, scores de proximité et tests de robustesse.">
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -20,6 +20,10 @@
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html" aria-current="page">Méthodologie</a>
       </nav>
+      <form class="nav-search" action="votes.html" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
+        <button type="submit" class="ghost">Chercher</button>
+      </form>
     </div>
     <div class="ribbon" role="group" aria-label="Couverture des données">
       <span><b id="rb-scrutins">…</b></span>
@@ -175,11 +179,14 @@
       <li><strong>Kappa de Cohen</strong> (contrôle) : accord corrigé de ce qui serait obtenu par
       hasard. Il évite qu'un accord élevé soit simplement dû à des votes consensuels où « tout le
       monde vote pour ».</li>
+      <li><strong>Marge et votes décisifs</strong> : pour chaque scrutin, la marge entre pour et
+      contre est calculée, ainsi que les groupes dont le basculement changerait à lui seul le
+      résultat. Affichés dans l'explorateur (« serré », « décisif »).</li>
       <li><strong>Carte MDS</strong> : positionnement en deux dimensions à partir des seuls taux
       d'accord (distance = 1 − accord). Aucun axe n'est interprété politiquement.</li>
     </ul>
-    <p>Exemple de la version publiée : la paire la plus proche est RN–UDR (82,8 %), la plus
-    éloignée ECOS–UDR (21,7 %) ; le kappa médian des 66 paires est faible (0,12), signe que
+    <p>Exemple de la version publiée : la paire la plus proche est RN–UDR (83,9 %), la plus
+    éloignée ECOS–UDR (21,6 %) ; le kappa médian des 66 paires est faible (0,12), signe que
     beaucoup de scrutins sont soit peu partagés, soit très prévisibles — d'où l'importance de
     regarder la robustesse en plus du chiffre brut.</p>
   </section>
@@ -260,7 +267,7 @@ python -m http.server 8000 --directory site</pre>
     et l'audit des sources <code>docs/AUDIT.md</code> dans le dépôt.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/methodologie.js?v=5"></script>
+<script src="assets/app.js?v=7"></script>
+<script src="assets/methodologie.js?v=7"></script>
 </body>
 </html>

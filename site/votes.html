@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Explorer les votes — Votes 2027</title>
   <meta name="description" content="Explorez tous les scrutins publics de l'Assemblée nationale : thème, période, type, position de chaque groupe, source officielle.">
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -20,6 +20,10 @@
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html">Méthodologie</a>
       </nav>
+      <form class="nav-search" action="votes.html" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
+        <button type="submit" class="ghost">Chercher</button>
+      </form>
     </div>
     <div class="ribbon" role="group" aria-label="Couverture des données">
       <span><b id="rb-scrutins">…</b></span>
@@ -74,6 +78,14 @@
         <option value="doublons">Uniquement les doublons neutralisés</option>
       </select>
     </div>
+    <div class="field">
+      <label for="f-tri">Trier par</label>
+      <select id="f-tri">
+        <option value="recent">Les plus récents</option>
+        <option value="serres">Les votes les plus serrés</option>
+      </select>
+    </div>
+    <button type="button" class="ghost" id="f-csv">Exporter en CSV</button>
     <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
   </div>
 
@@ -113,7 +125,7 @@
     pointent vers l'analyse nominative complète de chaque scrutin.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/votes.js?v=5"></script>
+<script src="assets/app.js?v=7"></script>
+<script src="assets/votes.js?v=7"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 
 - `python pipeline/run_all.py` — pipeline complet : télécharge (skip si présent), construit
   `data/france-votes.db`, calcule scores/robustesse et régénère `site/data/*.json` (~2 min).
-- `python -m unittest discover -s pipeline/tests` — 36 tests ; nécessitent la base et les exports.
+- `python -m unittest discover -s pipeline/tests` — 39 tests ; nécessitent la base et les exports.
 - `node pipeline/check_site.mjs` — vérifie que le JS du site recalcule les mêmes accords que le
   pipeline ; à lancer après toute modification de `score.py` ou de `site/assets/*.js`.
 - `python -m http.server 8000 --directory site` — servir le site ; ne pas ouvrir en `file://`

@@ -42,28 +42,58 @@ def load_scrutins(conn: sqlite3.Connection) -> list[dict]:
     rows = conn.execute(
         """
         SELECT s.uid, s.numero, s.date, s.type_code, s.sort_code, s.titre, s.theme,
-               s.groupes_valides, g.groupe_canonique, g.position_calculee,
-               g.position_officielle, g.participation
+               s.groupes_valides, s.pour, s.contre,
+               g.groupe_canonique, g.position_calculee, g.position_officielle,
+               g.participation, g.pour, g.contre
         FROM scrutins s
         LEFT JOIN scrutin_groupes g ON g.scrutin_uid = s.uid
         ORDER BY s.numero
         """
     )
-    for (uid, numero, date, type_code, sort_code, titre, theme, valides,
-         sigle, position, position_officielle, participation) in rows:
+    for (uid, numero, date, type_code, sort_code, titre, theme, valides, total_pour, total_contre,
+         sigle, position, position_officielle, participation, g_pour, g_contre) in rows:
         s = scrutins.get(uid)
         if s is None:
             s = scrutins[uid] = {
                 "uid": uid, "numero": numero, "date": date, "type_code": type_code,
                 "sort_code": sort_code, "titre": titre, "theme": theme or UNCLASSIFIED,
-                "groupes_valides": valides,
-                "positions": {}, "positions_officielles": {}, "parts": {},
+                "groupes_valides": valides, "total_pour": total_pour or 0, "total_contre": total_contre or 0,
+                "positions": {}, "positions_officielles": {}, "parts": {}, "counts": {},
             }
         if sigle:
             s["positions"][sigle] = position
             s["positions_officielles"][sigle] = position_officielle
             s["parts"][sigle] = participation or 0.0
+            s["counts"][sigle] = (g_pour or 0, g_contre or 0)
     return list(scrutins.values())
+
+
+def pivots_for(total_pour: int, total_contre: int, counts: dict[str, tuple[int, int]]) -> tuple[int, list[str]]:
+    """Marge (pour − contre) et groupes dont le basculement change à lui seul le résultat."""
+    adopted = total_pour > total_contre
+    pivots = []
+    for sigle, (pour, contre) in counts.items():
+        new_pour = total_pour - pour + contre
+        new_contre = total_contre - contre + pour
+        if (new_pour > new_contre) != adopted:
+            pivots.append(sigle)
+    return total_pour - total_contre, sorted(pivots)
+
+
+def group_traits(conn: sqlite3.Connection) -> dict[str, dict]:
+    """Effectif moyen et cohésion (indice de Rice) par groupe canonique."""
+    traits: dict[str, dict] = {}
+    for sigle, membres in conn.execute(
+        "SELECT groupe_canonique, AVG(nombre_membres) FROM scrutin_groupes "
+        "WHERE groupe_canonique IS NOT NULL AND nombre_membres > 0 GROUP BY 1"
+    ):
+        traits.setdefault(sigle, {})["membres"] = round(membres)
+    for sigle, rice in conn.execute(
+        "SELECT groupe_canonique, AVG(ABS(pour - contre) * 1.0 / (pour + contre)) "
+        "FROM scrutin_groupes WHERE groupe_canonique IS NOT NULL AND (pour + contre) > 0 GROUP BY 1"
+    ):
+        traits.setdefault(sigle, {})["cohesion"] = round(rice * 100, 1)
+    return traits
 
 
 def deduplicate(scrutins: list[dict]) -> None:
@@ -216,7 +246,8 @@ def bootstrap(scrutins: list[dict], iterations: int = BOOTSTRAP) -> dict:
                 num += count * w * agree
                 den += count * w
             scores[key] = num / den if den else float("nan")
-        order = sorted(scores, key=lambda k: (-1 if math.isnan(scores[k]) else -scores[k]))
+        finite = [k for k in scores if not math.isnan(scores[k])]
+        order = sorted(finite, key=lambda k: -scores[k])
         for rank, key in enumerate(order, start=1):
             ranks[key].append(rank)
         for key, value in scores.items():
@@ -331,6 +362,7 @@ def main() -> int:
     conn.row_factory = sqlite3.Row
     try:
         scrutins = load_scrutins(conn)
+        traits = group_traits(conn)
         built_at = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()[0]
     finally:
         conn.close()
@@ -380,6 +412,7 @@ def main() -> int:
 
     scrutin_export = []
     for s in sorted(scrutins, key=lambda x: x["numero"]):
+        marge, pivots = pivots_for(s["total_pour"], s["total_contre"], s["counts"])
         scrutins_row = {
             "u": s["uid"], "n": s["numero"], "d": s["date"], "t": s["type_code"],
             "r": s["sort_code"], "ti": s["titre"], "th": s["theme"],
@@ -387,6 +420,7 @@ def main() -> int:
             "q": [round(s["parts"].get(sigle, 0.0), 4) for sigle in SIGLES],
             "b": s["poids_base"], "f": round(s["facteur_theme"], 6),
             "dup": s["dup_of"], "ind": 1 if s.get("indisponible") else 0,
+            "m": marge, "pv": [SIGLES.index(sigle) for sigle in pivots],
         }
         scrutin_export.append(scrutins_row)
 
@@ -403,7 +437,9 @@ def main() -> int:
             "themes": theme_counts,
             "paires_avec_accord": sum(1 for v in primary.values() if v["accord"] is not None),
         },
-        "groupes": [{"sigle": s, "nom": nom, "couleur": GROUP_COLORS[i], "refs": [r]}
+        "groupes": [{"sigle": s, "nom": nom, "couleur": GROUP_COLORS[i], "refs": [r],
+                     "membres": traits.get(s, {}).get("membres"),
+                     "cohesion": traits.get(s, {}).get("cohesion")}
                     for i, (r, s, nom) in enumerate(CANON_GROUPS)],
     }
 

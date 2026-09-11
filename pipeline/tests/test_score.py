@@ -137,5 +137,26 @@ class TestMathematiques(unittest.TestCase):
         self.assertEqual(first, second)
 
 
+class TestPivots(unittest.TestCase):
+    def test_aucun_pivot(self):
+        counts = {"RN": (5, 0), "LFI": (3, 0), "UDPLR": (1, 0)}
+        marge, pivots = score.pivots_for(30, 10, counts)
+        self.assertEqual(marge, 20)
+        self.assertEqual(pivots, [])
+
+    def test_pivot_detecte(self):
+        # majorité de 3 voix : si le groupe de 4 bascule, le texte tombe.
+        counts = {"EPR": (4, 0), "RN": (8, 8)}
+        marge, pivots = score.pivots_for(15, 12, counts)
+        self.assertEqual(marge, 3)
+        self.assertEqual(pivots, ["EPR"])
+
+    def test_pivot_egalite_non_decisif(self):
+        counts = {"EPR": (2, 2)}
+        marge, pivots = score.pivots_for(10, 8, counts)
+        self.assertEqual(marge, 2)
+        self.assertEqual(pivots, [])
+
+
 if __name__ == "__main__":
     unittest.main()

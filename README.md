@@ -30,7 +30,7 @@ pipeline/
   score.py       pondérations, accords, kappa, robustesse, exports du site
   run_all.py     les trois étapes d'affilée
   check_site.mjs vérification du JS de site contre les exports
-  tests/         36 tests unitaires et d'intégration
+  tests/         39 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db
 site/            site statique (aucun framework, aucun build) + données JSON générées
 docs/
@@ -41,10 +41,12 @@ docs/
 ## Ce que publie le site
 
 - **Comparer** : matrice des taux d'accord entre les 12 groupes, fiche détaillée par paire
-  (accord, kappa, intervalle de robustesse, accord par thème, votes qui rapprochent / opposent),
-  carte MDS calculée uniquement à partir des votes.
+  (accord, kappa, intervalle de robustesse, timeline par période, accord par thème, votes qui
+  rapprochent / opposent), carte MDS calculée uniquement à partir des votes, état partageable
+  dans l'URL (`?a=RN&b=ECOS&theme=Budget&abst=1`), option d'exclusion des abstentions.
 - **Explorer les votes** : les 8 434 scrutins filtrables (thème, période, type, position d'un
-  groupe, recherche plein texte), chacun relié à sa page officielle.
+  groupe, recherche plein texte), tri par serrage, badges « serré » et « décisif » (marge et
+  groupes dont le basculement change le résultat), export CSV, chacun relié à sa page officielle.
 - **Questionnaire** : questions issues automatiquement des scrutins les plus discriminants par
   thème ; l'utilisateur voit les votes qui pèsent sur son résultat.
 - **Méthodologie** : toutes les règles et les limites, en clair.
@@ -59,8 +61,8 @@ docs/
 | Scrutins rattachés à un dossier | 8 078 (95,8 %) |
 | Scrutins thématisés (Sénat) | 7 822 (92,7 %) |
 | Votes distincts après déduplication | 3 150 |
-| Paire la plus proche | RN–UDR : 82,8 % d'accord |
-| Paire la plus éloignée | ECOS–UDR : 21,7 % |
+| Paire la plus proche | RN–UDR : 83,9 % d'accord |
+| Paire la plus éloignée | ECOS–UDR : 21,6 % |
 | Kappa médian des 66 paires | 0,12 |
 
 ## Principes de neutralité

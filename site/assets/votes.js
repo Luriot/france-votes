@@ -30,13 +30,20 @@
   }
   for (const g of state.meta.groupes) elGroupe.append(new Option(`${g.sigle} — ${g.nom}`, g.sigle));
 
+  const elTri = document.getElementById("f-tri");
+  const elCsv = document.getElementById("f-csv");
+  const params = new URLSearchParams(location.search);
+  if (params.get("q")) elSearch.value = params.get("q");
+  const wantedTheme = params.get("theme");
+  if (wantedTheme && [...elTheme.options].some((o) => o.value === wantedTheme)) elTheme.value = wantedTheme;
+
   let limit = 50;
 
   function filtered() {
     const q = elSearch.value.trim().toLowerCase();
     const theme = elTheme.value, periode = elPeriode.value, type = elType.value;
     const groupe = elGroupe.value, position = elPosition.value, doublons = elDoublons.value;
-    return state.scrutins.filter((s) => {
+    const rows = state.scrutins.filter((s) => {
       if (theme && s.th !== theme) return false;
       if (periode && VV.period(s) !== periode) return false;
       if (type && s.t !== type) return false;
@@ -48,7 +55,10 @@
         if (s.p[idx] !== Number(position)) return false;
       }
       return true;
-    }).sort((a, b) => b.n - a.n);
+    });
+    return (elTri?.value === "serres")
+      ? rows.sort((a, b) => Math.abs(a.m) - Math.abs(b.m) || b.n - a.n)
+      : rows.sort((a, b) => b.n - a.n);
   }
 
   function chips(s) {
@@ -74,6 +84,8 @@
             <span class="badge neutre">${VV.esc(TYPES[s.t] || s.t)}</span>
             ${s.b === 0 ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé dans les scores">doublon</span>` : ""}
             ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
+            ${Math.abs(s.m) <= 10 ? `<span class="badge neutre" title="Marge pour − contre">serré · ${s.m > 0 ? "+" : ""}${s.m}</span>` : ""}
+            ${s.pv?.length ? `<span class="badge neutre" title="Groupe(s) dont le basculement changerait à lui seul le résultat">décisif : ${s.pv.slice(0, 3).map((i) => VV.esc(sigles[i])).join(", ")}${s.pv.length > 3 ? "…" : ""}</span>` : ""}
           </div>
         </td>
         <td>${chips(s)}</td>
@@ -82,16 +94,37 @@
     elMore.hidden = rows.length <= limit;
   }
 
-  for (const el of [elSearch, elTheme, elPeriode, elType, elGroupe, elPosition, elDoublons]) {
-    el.addEventListener("input", () => { limit = 50; render(); });
-    el.addEventListener("change", () => { limit = 50; render(); });
+  for (const el of [elSearch, elTheme, elPeriode, elType, elGroupe, elPosition, elDoublons, elTri]) {
+    el?.addEventListener("input", () => { limit = 50; render(); });
+    el?.addEventListener("change", () => { limit = 50; render(); });
   }
   elMore.addEventListener("click", () => { limit += 100; render(); });
   document.getElementById("f-reset").addEventListener("click", () => {
     elSearch.value = ""; elTheme.value = ""; elPeriode.value = ""; elType.value = "";
     elGroupe.value = ""; elPosition.value = ""; elDoublons.value = "";
+    if (elTri) elTri.value = "recent";
     limit = 50; render();
   });
+
+  function exportCsv() {
+    const pos = (v) => (v === 1 ? "pour" : v === -1 ? "contre" : v === 0 ? "abstention" : "");
+    const header = ["numero", "date", "titre", "theme", "type", "resultat", "marge", "decisifs", ...sigles];
+    const lines = [header, ...filtered().map((s) => [
+      s.n, s.d, s.ti, s.th, s.t, s.r || "", s.m,
+      (s.pv || []).map((i) => sigles[i]).join("|"),
+      ...s.p.map(pos),
+    ])];
+    const csv = "\ufeff" + lines
+      .map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `votes-2027-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+  elCsv?.addEventListener("click", exportCsv);
 
   render();
 })().catch((err) => {

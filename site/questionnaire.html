@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questionnaire sur des votes réels — Votes 2027</title>
+  <meta name="description" content="Indiquez votre position sur des scrutins réellement votés à l'Assemblée nationale et voyez quels groupes ont voté comme vous, avec le détail des votes qui pèsent.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="site">
+  <div class="wrap">
+    <div class="site-top">
+      <a class="brand" href="index.html">Votes<span>2027</span></a>
+      <nav class="site" aria-label="Navigation principale">
+        <a href="index.html">Comparer</a>
+        <a href="votes.html">Explorer les votes</a>
+        <a href="questionnaire.html" aria-current="page">Questionnaire</a>
+        <a href="methodologie.html">Méthodologie</a>
+      </nav>
+    </div>
+    <div class="ribbon" role="group" aria-label="Couverture des données">
+      <span><b id="rb-scrutins">…</b></span>
+      <span><b id="rb-retenus">…</b></span>
+      <span><b id="rb-themes">…</b></span>
+      <span><b id="rb-doublons">…</b></span>
+      <span><b id="rb-date">…</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" class="wrap">
+  <h1>Questionnaire sur des votes réels</h1>
+  <p>Pas d'affirmations inventées : chaque question est un scrutin qui a réellement eu lieu.
+  Votre réponse est comparée aux votes des groupes sur <em>ce même scrutin</em>. Vous voyez ensuite
+  exactement quels votes ont le plus pesé dans le résultat.</p>
+
+  <details class="aide" open>
+    <summary>Comment ça marche, exactement ?</summary>
+    <ol class="list-tight">
+      <li>Les questions sont choisies <strong>automatiquement</strong> : pour chaque thème, les scrutins
+      où les groupes sont les plus partagés (entropie la plus élevée). Aucun choix éditorial.</li>
+      <li>« Pour » = voter pour le texte ou l'amendement tel que formulé à l'Assemblée ; le titre
+      officiel et le lien source sont affichés pour chaque question.</li>
+      <li>Le résultat est un taux d'accord pondéré entre vos réponses et les positions des groupes,
+      sur les seuls scrutins que vous avez renseignés. Un vote pèse selon son thème (maximum 15 % du
+      poids total par thème) et selon la participation du groupe à ce vote.</li>
+      <li>Vous pouvez tout modifier, passer des questions, et ouvrir le détail des votes qui pèsent
+      positivement ou négativement.</li>
+    </ol>
+  </details>
+
+  <p class="filters-result" id="progress" aria-live="polite">Chargement…</p>
+
+  <div class="card" id="resultats" aria-live="polite"></div>
+
+  <div id="questions"></div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>Ce questionnaire n'est pas une consigne de vote. Il repose sur des scrutins publics officiels ;
+    les positions des groupes sont recalculées depuis les listes de vote nominatives.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script src="assets/questionnaire.js"></script>
+</body>
+</html>

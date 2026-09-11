@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explorer les votes — Votes 2027</title>
+  <meta name="description" content="Explorez tous les scrutins publics de l'Assemblée nationale : thème, période, type, position de chaque groupe, source officielle.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="site">
+  <div class="wrap">
+    <div class="site-top">
+      <a class="brand" href="index.html">Votes<span>2027</span></a>
+      <nav class="site" aria-label="Navigation principale">
+        <a href="index.html">Comparer</a>
+        <a href="votes.html" aria-current="page">Explorer les votes</a>
+        <a href="questionnaire.html">Questionnaire</a>
+        <a href="methodologie.html">Méthodologie</a>
+      </nav>
+    </div>
+    <div class="ribbon" role="group" aria-label="Couverture des données">
+      <span><b id="rb-scrutins">…</b></span>
+      <span><b id="rb-retenus">…</b></span>
+      <span><b id="rb-themes">…</b></span>
+      <span><b id="rb-doublons">…</b></span>
+      <span><b id="rb-date">…</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" class="wrap">
+  <h1>Explorer les votes</h1>
+  <p>Tous les scrutins publics de la XVII<sup>e</sup> législature, sans sélection éditoriale. Chaque
+  ligne renvoie à l'analyse officielle de l'Assemblée nationale.</p>
+
+  <div class="controls">
+    <div class="field">
+      <label for="f-recherche">Recherche dans le titre</label>
+      <input type="search" id="f-recherche" placeholder="ex. finances 2026, logement…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="f-theme">Thème</label>
+      <select id="f-theme"><option value="">Tous</option></select>
+    </div>
+    <div class="field">
+      <label for="f-periode">Période</label>
+      <select id="f-periode"><option value="">Toutes</option></select>
+    </div>
+    <div class="field">
+      <label for="f-type">Type de scrutin</label>
+      <select id="f-type"><option value="">Tous</option></select>
+    </div>
+    <div class="field">
+      <label for="f-groupe">Position d'un groupe</label>
+      <select id="f-groupe"><option value="">Aucun filtre</option></select>
+    </div>
+    <div class="field">
+      <label for="f-position">Était</label>
+      <select id="f-position">
+        <option value="">–</option>
+        <option value="1">pour</option>
+        <option value="-1">contre</option>
+        <option value="0">abstention</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-doublons">Doublons</label>
+      <select id="f-doublons">
+        <option value="">Tous</option>
+        <option value="uniques">Uniquement les votes retenus</option>
+        <option value="doublons">Uniquement les doublons neutralisés</option>
+      </select>
+    </div>
+    <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
+  </div>
+
+  <p class="filters-result" id="resultat-count" aria-live="polite">Chargement…</p>
+
+  <div class="card">
+    <div class="table-scroll">
+      <table class="data" aria-label="Liste des scrutins">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Scrutin</th>
+            <th scope="col" title="Position de chaque groupe, dans l'ordre RN, EPR, LFI-NFP, SOC, DR, ECOS, DEM, HOR, LIOT, GDR, UDR, NI">
+              Positions des groupes
+            </th>
+            <th scope="col">Résultat</th>
+          </tr>
+        </thead>
+        <tbody id="votes-body"></tbody>
+      </table>
+    </div>
+    <p><button type="button" class="ghost" id="more" hidden>Afficher plus de résultats</button></p>
+  </div>
+
+  <details class="aide">
+    <summary>Comment lire la colonne « positions des groupes » ?</summary>
+    <p>Douze petits carrés, dans l'ordre des groupes : <strong>RN, EPR, LFI-NFP, SOC, DR, ECOS, DEM,
+    HOR, LIOT, GDR, UDR, NI</strong>. Vert = pour, rouge = contre, ocre = abstention, gris clair =
+    position non déterminée (groupe absent ou sans majorité sur ce vote). Survolez un carré pour voir
+    le détail.</p>
+  </details>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>Données : open data de l'Assemblée nationale (licence ouverte). Les liens « source officielle »
+    pointent vers l'analyse nominative complète de chaque scrutin.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script src="assets/votes.js"></script>
+</body>
+</html>

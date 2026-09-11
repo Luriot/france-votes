@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Votes 2027 — comment votent les groupes à l'Assemblée</title>
+  <meta name="description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="site">
+  <div class="wrap">
+    <div class="site-top">
+      <a class="brand" href="index.html">Votes<span>2027</span></a>
+      <nav class="site" aria-label="Navigation principale">
+        <a href="index.html" aria-current="page">Comparer</a>
+        <a href="votes.html">Explorer les votes</a>
+        <a href="questionnaire.html">Questionnaire</a>
+        <a href="methodologie.html">Méthodologie</a>
+      </nav>
+    </div>
+    <div class="ribbon" role="group" aria-label="Couverture des données">
+      <span><b id="rb-scrutins">…</b></span>
+      <span><b id="rb-retenus">…</b></span>
+      <span><b id="rb-themes">…</b></span>
+      <span><b id="rb-doublons">…</b></span>
+      <span><b id="rb-date">…</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" class="wrap">
+  <section class="hero">
+    <div>
+      <p class="kicker">Outil citoyen, méthode ouverte</p>
+      <h1>Comment les groupes votent-ils réellement&nbsp;?</h1>
+      <p>Ce site compare les groupes de l'Assemblée nationale à partir de <strong>tous</strong> leurs
+      scrutins publics, pas d'une sélection de votes choisis à la main. Chaque score est recalculable :
+      voici les votes qui rapprochent deux groupes, ceux qui les opposent, et à quel point le résultat
+      dépend de la méthode.</p>
+      <p class="note">Aucun jugement « gauche / droite » n'est injecté
+      dans les données. Les positions affichées sortent des listes de vote officielles ; la carte est
+      calculée après coup, uniquement pour la lecture.</p>
+      <p><a href="#comparer">Comparer deux groupes →</a> · <a href="questionnaire.html">Répondre sur des votes réels →</a></p>
+    </div>
+    <div class="card" role="group" aria-label="Couverture des données">
+      <div class="stats">
+        <div class="stat"><b id="hero-scrutins">…</b><span>scrutins publics analysés</span></div>
+        <div class="stat"><b id="hero-retenus">…</b><span>votes distincts après neutralisation des doublons</span></div>
+        <div class="stat"><b id="hero-themes">…</b><span>scrutins classés par thème (source Sénat)</span></div>
+        <div class="stat"><b id="hero-pct">…</b><span>des scrutins ont un thème officiel traçable</span></div>
+      </div>
+      <p class="fineprint">Source : open data de
+      l'Assemblée nationale, données au <span id="data-date">…</span>. Licence ouverte.</p>
+    </div>
+  </section>
+
+  <section class="block" id="comparer">
+    <div class="block-head">
+      <h2>Comparer deux groupes</h2>
+      <p>Cliquez sur une case de la matrice, ou choisissez dans la carte ci-dessous. Filtrez par thème ou par période : tout est recalculé devant vous.</p>
+    </div>
+    <div class="controls">
+      <div class="field">
+        <label for="f-theme">Filtrer par thème</label>
+        <select id="f-theme"><option value="">Tous les thèmes</option></select>
+      </div>
+      <div class="field">
+        <label for="f-periode">Filtrer par période</label>
+        <select id="f-periode"><option value="">Toute la législature</option></select>
+      </div>
+      <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
+    </div>
+    <div class="card">
+      <div class="table-scroll">
+        <table class="matrix" id="matrix" aria-label="Matrice des taux d'accord entre groupes (en %)"></table>
+      </div>
+      <p class="fineprint">Lecture : pourcentage d'accord
+      pondéré entre deux groupes sur les scrutins où les deux ont une position déterminée. Plus la case
+      est foncée, plus les groupes votent ensemble.</p>
+    </div>
+    <div class="card" id="pair-panel" aria-live="polite">
+      <p class="loading">Chargement…</p>
+    </div>
+    <div class="card" id="variants"></div>
+  </section>
+
+  <section class="block" id="carte">
+    <div class="block-head">
+      <h2>Carte des proximités</h2>
+      <p>Positionnement calculé à partir des seuls votes (MDS sur les taux d'accord). Les axes n'ont pas de signification politique préétablie.</p>
+    </div>
+    <div class="map-wrap">
+      <svg class="map" id="map" viewBox="0 0 640 460" role="img" aria-label="Carte des proximités entre groupes"></svg>
+      <div class="card" id="map-panel" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Ce que ce site ne dit pas</h2>
+    </div>
+    <div class="card">
+      <p>Ce site ne recommande aucun vote et ne prétend pas dire « qui est proche de vous ».</p>
+      <p>Il montre une chose vérifiable : <em>à quels scrutins publics deux groupes ont voté pareil,
+      et selon quelles règles ce constat est établi</em>. Un vote de groupe résume des députés qui
+      peuvent voter différemment ; un scrutin isolé ne définit pas un programme. Les limites sont
+      détaillées sur la <a href="methodologie.html">page méthodologie</a>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p><strong>Sources</strong> : Assemblée nationale (open data des scrutins, dossiers législatifs,
+    acteurs et organes) ; Sénat (base Dosleg pour les thèmes). Données publiques sous licence ouverte.
+    Chaque vote est relié à sa page officielle sur <span>assemblee-nationale.fr</span>.</p>
+    <p>Pipeline, base de données et tests : voir le dépôt du projet. Les chiffres affichés proviennent
+    du fichier <code>site/data/meta.json</code> généré à la construction.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script src="assets/compare.js"></script>
+</body>
+</html>

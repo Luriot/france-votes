@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Méthodologie — Votes 2027</title>
+  <meta name="description" content="Méthodologie complète, reproductible et auditable : sources, sélection des scrutins, pondérations, scores de proximité et tests de robustesse.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="site">
+  <div class="wrap">
+    <div class="site-top">
+      <a class="brand" href="index.html">Votes<span>2027</span></a>
+      <nav class="site" aria-label="Navigation principale">
+        <a href="index.html">Comparer</a>
+        <a href="votes.html">Explorer les votes</a>
+        <a href="questionnaire.html">Questionnaire</a>
+        <a href="methodologie.html" aria-current="page">Méthodologie</a>
+      </nav>
+    </div>
+    <div class="ribbon" role="group" aria-label="Couverture des données">
+      <span><b id="rb-scrutins">…</b></span>
+      <span><b id="rb-retenus">…</b></span>
+      <span><b id="rb-themes">…</b></span>
+      <span><b id="rb-doublons">…</b></span>
+      <span><b id="rb-date">…</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" class="wrap">
+  <h1>Méthodologie</h1>
+  <p>Toutes les règles ci-dessous sont appliquées automatiquement par le pipeline. Le même fichier
+  source et le même code produisent les mêmes résultats.</p>
+
+  <nav class="card" aria-label="Sommaire de la méthodologie">
+    <ol>
+      <li><a href="#principe">Principe</a></li>
+      <li><a href="#donnees">Données et sources</a></li>
+      <li><a href="#selection">Quels scrutins sont analysés</a></li>
+      <li><a href="#position">Position d'un groupe sur un scrutin</a></li>
+      <li><a href="#themes">Dossiers et thèmes</a></li>
+      <li><a href="#dedup">Déduplication</a></li>
+      <li><a href="#ponderations">Pondérations</a></li>
+      <li><a href="#scores">Scores de proximité</a></li>
+      <li><a href="#robustesse">Analyse de robustesse</a></li>
+      <li><a href="#ecartes">Choix écartés</a></li>
+      <li><a href="#limites">Limites</a></li>
+      <li><a href="#questionnaire">Questionnaire</a></li>
+      <li><a href="#reproductibilite">Reproductibilité</a></li>
+    </ol>
+  </nav>
+
+  <section class="block" id="principe">
+    <h2>1. Principe</h2>
+    <p>Le but est de comparer des <strong>comportements de vote observés</strong>, pas des programmes
+    ni des étiquettes. Le pipeline ne classe jamais un vote comme « de gauche » ou « de droite » :
+    les axes de la carte sont calculés après coup, à partir des seuls votes, et servent uniquement
+    à la lecture.</p>
+    <p>Aucune sélection de type « les votes qui comptent » n'est faite à la main. La population de
+    départ est l'intégralité des scrutins publics de la législature, puis des règles structurelles,
+    écrites ici, s'appliquent.</p>
+  </section>
+
+  <section class="block" id="donnees">
+    <h2>2. Données et sources</h2>
+    <table class="data">
+      <thead><tr><th>Donnée</th><th>Source officielle</th><th>Volume réel constaté</th></tr></thead>
+      <tbody>
+        <tr><td>Scrutins publics et votes nominatifs (XVII<sup>e</sup> législature)</td>
+            <td><a href="https://data.assemblee-nationale.fr/travaux-parlementaires/votes" target="_blank" rel="noopener">Open data Assemblée nationale</a></td>
+            <td>8 434 scrutins, 1 270 476 votes individuels, 101 208 cellules groupe × scrutin</td></tr>
+        <tr><td>Députés, mandats, groupes</td>
+            <td><a href="https://data.assemblee-nationale.fr/acteurs/deputes-senateurs-ministres-de-la-legislature" target="_blank" rel="noopener">Open data Assemblée nationale</a></td>
+            <td>1 067 acteurs, 853 organes, 32 473 mandats</td></tr>
+        <tr><td>Dossiers législatifs</td>
+            <td><a href="https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs" target="_blank" rel="noopener">Open data Assemblée nationale</a></td>
+            <td>3 069 dossiers, 7 084 documents</td></tr>
+        <tr><td>Thèmes officiels des dossiers</td>
+            <td><a href="https://data.senat.fr/dosleg/" target="_blank" rel="noopener">Base Dosleg, Sénat</a></td>
+            <td>12 432 dossiers, 8 411 avec thème</td></tr>
+      </tbody>
+    </table>
+    <p>Chaque source est téléchargée automatiquement, sa taille et son empreinte SHA-256 sont
+    enregistrées dans <code>data/manifest.json</code>. Chaque scrutin conserve son identifiant
+    officiel, son numéro, sa date et sa page source sur assemblee-nationale.fr.</p>
+    <p>Le fichier de référence du site de comparaison « Leurs Votes » a été analysé :
+    il repose sur une sélection éditoriale de 10 sujets (≈ 1 800 votes choisis par des
+    journalistes). Utile, mais non auditable ; ce projet fait le choix inverse : tout prendre,
+    puis expliquer les règles de calcul.</p>
+  </section>
+
+  <section class="block" id="selection">
+    <h2>3. Quels scrutins sont analysés</h2>
+    <p>Tous les scrutins publics de la XVII<sup>e</sup> législature disponibles dans le flux open
+    data (8 434 au 21 juillet 2026). Le jeu de données contient pour chaque scrutin le décompte
+    nominatif complet : pour, contre, abstention et non-votants, par groupe et par député.</p>
+    <p>Deux exclusions structurelles, sans choix éditorial :</p>
+    <ul>
+      <li>14 scrutins (0,17 %) dont les références de groupes sont corrompues dans le flux source
+      (toutes remplacées par un identifiant vide) : ils restent consultables mais ne peuvent pas
+      être attribués à des groupes.</li>
+      <li>Aucun filtre par thème, par résultat, par « importance » ou par médiatisation.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="position">
+    <h2>4. Position d'un groupe sur un scrutin</h2>
+    <p>La position est recalculée depuis les votes individuels, pas reprise du champ résumé
+    officiel :</p>
+    <ol>
+      <li>si aucun membre du groupe n'a pris position (pour, contre ou abstention), la position est
+      <strong>non déterminée</strong> ;</li>
+      <li>sinon, la position est la modalité (pour / contre / abstention) strictement majoritaire
+      parmi les membres ayant pris position ;</li>
+      <li>en cas d'égalité, la position est <strong>non déterminée</strong> (pas de majorité) ;</li>
+      <li>la <strong>participation</strong> du groupe est le rapport entre le nombre de membres ayant
+      pris position et l'effectif officiel du groupe à ce scrutin.</li>
+    </ol>
+    <p>Pourquoi ne pas utiliser le champ officiel « position majoritaire » ? Parce qu'il masque les
+    égalités et les absences et ne distingue pas « 1 votant pour » de « 40 votants pour ». La règle
+    du site est explicite et vérifiable scrutin par scrutin.</p>
+  </section>
+
+  <section class="block" id="themes">
+    <h2>5. Dossiers et thèmes</h2>
+    <p>Les données de l'Assemblée ne comportent pas de thème exploitable pour cette législature.
+    Le thème est donc récupéré à la source officielle du Sénat (base Dosleg), qui classe chaque
+    dossier législatif. L'appariement se fait en trois étapes, dans cet ordre :</p>
+    <ol>
+      <li>lien officiel du scrutin vers son dossier (2 608 scrutins) ;</li>
+      <li>appariement par titre officiel normalisé (3 493 scrutins) ;</li>
+      <li>appariement par titre des documents du dossier (rapports, textes déposés) : 1 977 scrutins.</li>
+    </ol>
+    <p>Résultat constaté : <strong>7 822 scrutins (92,7 %) ont un thème officiel</strong>, 356
+    scrutins (4,2 %) restent sans dossier identifiable et 256 sans thème Sénat ; ils sont regroupés
+    sous « Non classé » et exclus uniquement des vues par thème. Un dossier qui porte plusieurs
+    thèmes est classé sous le premier, dans l'ordre officiel du Sénat.</p>
+  </section>
+
+  <section class="block" id="dedup">
+    <h2>6. Déduplication</h2>
+    <p>Deux scrutins ont souvent exactement les mêmes positions pour les 12 groupes (séries
+    d'amendements identiques, votes répétés). Le pipeline considère comme <strong>redondants</strong>
+    les scrutins dont le vecteur de positions des 12 groupes est identique. Seul le premier
+    (numéro le plus faible) compte dans les scores ; les autres restent visibles, marqués
+    « doublon neutralisé ».</p>
+    <p>Effet constaté : 8 434 scrutins → <strong>3 150 vecteurs distincts</strong>, soit 5 284
+    doublons neutralisés. Sans cette étape, une série de 1 474 votes identiques pèserait 1 474 fois
+    plus qu'un vote unique.</p>
+  </section>
+
+  <section class="block" id="ponderations">
+    <h2>7. Pondérations</h2>
+    <p>Le poids d'un scrutin dans le score d'une paire de groupes combine trois principes :</p>
+    <ol>
+      <li><strong>Un vote distinct = un vote</strong> (poids de base 1 après déduplication) ;</li>
+      <li><strong>Équilibre entre thèmes</strong> : aucun thème ne peut peser plus de 15 % du poids
+      total. Un thème de n scrutins reçoit un facteur min(1 ; 0,15 × N / n), où N est le nombre de
+      votes retenus. Sans cette règle, le budget et ses milliers d'amendements écraserait tous les
+      autres sujets ;</li>
+      <li><strong>Participation</strong> : pour une paire (A, B), chaque scrutin est pondéré par la
+      plus faible des deux participations. Un groupe absent ne compte pas, un groupe peu mobilisé
+      pèse moins. Il n'y a donc pas de seuil arbitraire d'exclusion.</li>
+    </ol>
+    <p>Formule : poids = 1 × facteur_thème × min(participation A ; participation B).</p>
+  </section>
+
+  <section class="block" id="scores">
+    <h2>8. Scores de proximité</h2>
+    <ul>
+      <li><strong>Taux d'accord pondéré</strong> (score principal) : sur tous les scrutins où les
+      deux groupes ont une position déterminée, part du poids total où les positions sont
+      identiques. Il s'accompagne du nombre de scrutins partagés et du poids effectif.</li>
+      <li><strong>Kappa de Cohen</strong> (contrôle) : accord corrigé de ce qui serait obtenu par
+      hasard. Il évite qu'un accord élevé soit simplement dû à des votes consensuels où « tout le
+      monde vote pour ».</li>
+      <li><strong>Carte MDS</strong> : positionnement en deux dimensions à partir des seuls taux
+      d'accord (distance = 1 − accord). Aucun axe n'est interprété politiquement.</li>
+    </ul>
+    <p>Exemple de la version publiée : la paire la plus proche est RN–UDR (82,8 %), la plus
+    éloignée ECOS–UDR (21,7 %) ; le kappa médian des 66 paires est faible (0,12), signe que
+    beaucoup de scrutins sont soit peu partagés, soit très prévisibles — d'où l'importance de
+    regarder la robustesse en plus du chiffre brut.</p>
+  </section>
+
+  <section class="block" id="robustesse">
+    <h2>9. Analyse de robustesse</h2>
+    <p>Un classement peut changer si l'on change une convention. Le site recalcule donc chaque
+    paire dans 7 variantes de méthode : pondération uniforme, plafond par thème seul, participation
+    seule, sans déduplication, position majoritaire officielle de l'Assemblée, exclusion des groupes
+    présents à moins de 25 %, puis à moins de 50 %.</p>
+    <p>S'y ajoutent : le retrait d'un thème entier (leave-one-theme-out), le calcul par période et
+    par type de scrutin, et <strong>300 rééchantillonnages aléatoires avec remise</strong> (graine
+    fixe) qui donnent un intervalle de confiance à 90 % et la stabilité du rang de proximité.</p>
+    <p>La fiche de chaque paire affiche l'intervalle complet. Si un couple passe de « très proche »
+    à « éloigné » selon la méthode, c'est visible et signalé — c'est le résultat le plus honnête
+    que l'on puisse donner.</p>
+  </section>
+
+  <section class="block" id="ecartes">
+    <h2>10. Choix écartés</h2>
+    <table class="data">
+      <thead><tr><th>Option</th><th>Décision</th><th>Raison</th></tr></thead>
+      <tbody>
+        <tr><td>Sélection « top N votes médiatiques »</td><td>écartée</td><td>biais éditorial non reproductible</td></tr>
+        <tr><td>Sélection des votes les plus polarisés</td><td>écartée</td><td>favorise mécaniquement le clivage, ignore le consensus</td></tr>
+        <tr><td>Échantillon aléatoire de petite taille</td><td>écartée</td><td>perte d'information sans bénéfice ; on garde tous les votes</td></tr>
+        <tr><td>Pondération par « importance » du texte</td><td>écartée</td><td>choix éditorial impossible à tracer</td></tr>
+        <tr><td>Thèmes par mots-clés</td><td>écartée</td><td>classification non officielle ; thème Sénat utilisé à la place</td></tr>
+        <tr><td>Exclusion des votes à faible participation</td><td>écartée</td><td>seuil arbitraire ; remplacée par une pondération continue</td></tr>
+        <tr><td>Kappa comme score principal</td><td>écarté</td><td>moins lisible pour le grand public ; conservé comme contrôle</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block" id="limites">
+    <h2>11. Limites assumées</h2>
+    <ul>
+      <li>Les thèmes officiels ne couvrent pas les textes jamais transmis au Sénat (7,3 % des
+      scrutins sont « non classés »).</li>
+      <li>Le plafond de 15 % par thème, la déduplication et la pondération par participation sont
+      des conventions ; toutes sont testées en sensibilité.</li>
+      <li>Un vote de groupe résume des députés qui peuvent voter différemment ; le score compare des
+      groupes, pas des personnes.</li>
+      <li>Seule la législature en cours est incluse : les groupes et les équilibres politiques ont
+      changé depuis 2022.</li>
+      <li>Seuls les scrutins publics laissent une trace nominative ; les votes à main levée sont
+      invisibles par nature.</li>
+      <li>Neutralité ne veut pas dire vérité objective : le site minimise les choix éditoriaux et
+      affiche ses conventions, il ne prétend pas produire un verdict.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="questionnaire">
+    <h2>12. Questionnaire</h2>
+    <p>Le questionnaire n'invente aucune affirmation : les questions sont des scrutins réels,
+    choisis automatiquement — pour chaque thème, ceux où les positions des groupes sont les plus
+    partagées (entropie maximale). La chaîne est entièrement visible :</p>
+    <pre class="codeblock">votre position → scrutin réel (titre officiel + lien source) → position des groupes
+→ accord pondéré sur vos seules réponses → liste des votes qui pèsent le plus</pre>
+    <p>Le résultat n'est pas une consigne de vote : c'est la liste des groupes dont les votes passés
+    ressemblent le plus à vos réponses sur les scrutins que vous avez renseignés.</p>
+  </section>
+
+  <section class="block" id="reproductibilite">
+    <h2>13. Reproductibilité</h2>
+    <pre class="codeblock">python pipeline/run_all.py       # télécharge, vérifie, construit la base, calcule les scores
+python -m unittest discover -s pipeline/tests
+python -m http.server 8000 --directory site</pre>
+    <p>La base transformée est un fichier SQLite (<code>data/france-votes.db</code>) ; les données
+    brutes restent dans <code>data/raw/</code>, avec les empreintes dans
+    <code>data/manifest.json</code>. Aucune donnée n'est saisie à la main.</p>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>Méthodologie version 1.0 — voir aussi le document technique <code>docs/METHODOLOGIE.md</code>
+    et l'audit des sources <code>docs/AUDIT.md</code> dans le dépôt.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>
+  VV.loadRibbon().catch(() => {});
+</script>
+</body>
+</html>

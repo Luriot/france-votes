@@ -97,8 +97,6 @@ const VV = (() => {
     return meta;
   }
 
-  const POSITION_NAME = { 1: "pour", 0: "abstention", "-1": "contre" };
-
   function fmtPct(value) {
     if (value === null || value === undefined || Number.isNaN(value)) return "–";
     return `${(value * 100).toFixed(1).replace(".", ",")} %`;
@@ -121,24 +119,15 @@ const VV = (() => {
 
   /* --- Calcul des accords (même formule que le pipeline) --------------- */
 
-  function weightsFor(scheme) {
-    if (scheme === "uniforme") return () => 1;
-    if (scheme === "thematique") return (s) => s.b * s.f;
-    if (scheme === "participation_seule") return (s, a, b) => s.b * Math.min(s.q[a], s.q[b]);
-    if (scheme === "sans_deduplication") return (s, a, b) => s.f * Math.min(s.q[a], s.q[b]);
-    return (s, a, b) => s.b * s.f * Math.min(s.q[a], s.q[b]);
-  }
-
-  function pairStats(scrutins, a, b, scheme = "principal") {
+  function pairStats(scrutins, a, b) {
     const ia = state.meta.groupes.findIndex((g) => g.sigle === a);
     const ib = state.meta.groupes.findIndex((g) => g.sigle === b);
-    const weight = weightsFor(scheme);
     let num = 0, den = 0, n = 0;
     for (const s of scrutins) {
       const pa = s.p[ia], pb = s.p[ib];
       if (pa === null || pb === null) continue;
       n += 1;
-      const w = weight(s, ia, ib);
+      const w = s.b * s.f * Math.min(s.q[ia], s.q[ib]);
       if (w > 0) {
         num += w * (pa === pb ? 1 : 0);
         den += w;
@@ -147,12 +136,12 @@ const VV = (() => {
     return { accord: den > 0 ? num / den : null, n, poids: den };
   }
 
-  function allPairs(scrutins, scheme = "principal") {
+  function allPairs(scrutins) {
     const out = {};
     const groups = state.meta.groupes.map((g) => g.sigle);
     for (let i = 0; i < groups.length; i += 1) {
       for (let j = i + 1; j < groups.length; j += 1) {
-        out[`${groups[i]}|${groups[j]}`] = pairStats(scrutins, groups[i], groups[j], scheme);
+        out[`${groups[i]}|${groups[j]}`] = pairStats(scrutins, groups[i], groups[j]);
       }
     }
     return out;
@@ -214,7 +203,7 @@ const VV = (() => {
   }
 
   return {
-    loadJSON, loadAll, loadRibbon, get state() { return state; }, POSITION_NAME,
+    loadJSON, loadAll, loadRibbon, get state() { return state; },
     fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, heatColor, textOn,
     stance, esc, safeColor, period, setText, renderRibbon, initSignature,
   };

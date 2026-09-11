@@ -19,7 +19,9 @@
   for (const [theme, count] of Object.entries(state.meta.compteurs.themes).sort((a, b) => b[1] - a[1])) {
     elTheme.append(new Option(`${theme} (${count})`, theme));
   }
-  for (const p of state.meta.compteurs.periodes) elPeriode.append(new Option(p.replace("-", " "), p));
+  for (const p of [...new Set(state.scrutins.map((s) => VV.period(s)))].sort()) {
+    elPeriode.append(new Option(p.replace("-", " "), p));
+  }
   const TYPES = {
     SPO: "Scrutin public ordinaire", SPS: "Scrutin public solennel", MOC: "Motion de censure",
   };

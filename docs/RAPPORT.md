@@ -10,7 +10,7 @@ réellement téléchargés, parsés et testés localement.
 | Source | Contenu utilisé | URL | Vérifié |
 |---|---|---|---|
 | Open data Assemblée nationale | Scrutins + votes nominatifs, XVIIe législature | `data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip` | 26 317 479 octets, MD5 `d2d62edf…` conforme |
-| Open data Assemblée nationale | Acteurs, mandats, organes (groupes) | `.../17/amo/deputes_senateurs_ministres_legislature/AMO20_…json.zip` | 2 544 833 octets |
+| Open data Assemblée nationale | Acteurs, mandats, organes (audités, non ingérés : les groupes canoniques sont figés dans le code) | `.../17/amo/deputes_senateurs_ministres_legislature/AMO20_…json.zip` | 2 544 833 octets |
 | Open data Assemblée nationale | Dossiers législatifs + documents | `.../17/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip` | 10 305 544 octets |
 | Open data Sénat (Dosleg) | Thèmes officiels des dossiers | `data.senat.fr/data/dosleg/dossiers-legislatifs.csv` | 3 622 331 octets, 12 432 dossiers |
 | Pages officielles AN | Vérification manuelle des scrutins 218 et 3824 | `assemblee-nationale.fr/dyn/17/scrutins/{n}` | chiffres identiques à la base |
@@ -141,6 +141,5 @@ Règles structurelles appliquées :
 - Base réelle : `data/france-votes.db` (SQLite, 154 Mo).
 - Pipeline reproductible : `pipeline/` (`run_all.py`, `download.py`, `build_db.py`, `score.py`).
 - Méthodologie : `docs/METHODOLOGIE.md` + page site ; audit : `docs/AUDIT.md`.
-- Tests : `pipeline/tests/` (36 tests, verts) + `pipeline/check_site.mjs` +
-  `pipeline/verify_officiel.py`.
+- Tests : `pipeline/tests/` (36 tests, verts) + `pipeline/check_site.mjs`.
 - Sources : `data/manifest.json` (URL, date, taille, SHA-256, MD5).

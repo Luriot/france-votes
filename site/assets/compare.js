@@ -21,7 +21,8 @@
     selTheme.append(new Option(`${theme} (${count})`, theme));
   }
   const selPeriod = document.getElementById("f-periode");
-  for (const p of state.meta.compteurs.periodes) {
+  const periodes = [...new Set(state.scrutins.map((s) => VV.period(s)))].sort();
+  for (const p of periodes) {
     selPeriod.append(new Option(p.replace("-", " "), p));
   }
 
@@ -324,7 +325,7 @@
 
     box.innerHTML = `
       <div class="pair-head">
-        <div><div class="kicker">Accord pondéré</div><div class="pair-score">${VV.fmtPct(stat.accord)}</div></div>
+        <div><p class="eyebrow" style="margin:0">Accord pondéré</p><div class="pair-score">${VV.fmtPct(stat.accord)}</div></div>
         <div class="pair-meta">
           <div><strong>${VV.esc(selected.a)}</strong> (${VV.esc(groupes.find((g) => g.sigle === selected.a)?.nom ?? "")})</div>
           <div><strong>${VV.esc(selected.b)}</strong> (${VV.esc(groupes.find((g) => g.sigle === selected.b)?.nom ?? "")})</div>

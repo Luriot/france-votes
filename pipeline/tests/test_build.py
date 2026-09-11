@@ -39,14 +39,10 @@ class TestNormalisation(unittest.TestCase):
         )
         self.assertTrue(key2.startswith("proposition de loi relative au droit a l aide a mourir"))
 
-    def test_as_list_et_text_of(self):
+    def test_as_list(self):
         self.assertEqual(build_db.as_list(None), [])
         self.assertEqual(build_db.as_list({"a": 1}), [{"a": 1}])
         self.assertEqual(build_db.as_list([1, 2]), [1, 2])
-        self.assertIsNone(build_db.text_of({"@xsi:nil": "true"}))
-        self.assertIsNone(build_db.text_of({"@xmlns:xsi": "x", "@xsi:nil": "true"}))
-        self.assertEqual(build_db.text_of({"#text": "PA1"}), "PA1")
-        self.assertEqual(build_db.text_of("ABC"), "ABC")
 
 
 class TestAppariements(unittest.TestCase):

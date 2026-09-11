@@ -39,8 +39,6 @@ CANON_REFS = {ref for ref, _, _ in CANON_GROUPS}
 SIGLE_BY_REF = {ref: sigle for ref, sigle, _ in CANON_GROUPS}
 GROUP_ALIASES = {"PO872880": "PO847173", "PO845520": "PO847173"}
 
-XSI = "{http://www.w3.org/2001/XMLSchema-instance}"
-
 
 def as_list(value):
     if value is None:
@@ -55,16 +53,6 @@ def to_int(value, default=0):
         return int(str(value).strip())
     except (TypeError, ValueError):
         return default
-
-
-def text_of(value):
-    if value is None or isinstance(value, str):
-        return value
-    if isinstance(value, dict):
-        if value.get(XSI + "nil") == "true":
-            return None
-        return value.get("#text")
-    return str(value)
 
 
 def norm(value: str) -> str:
@@ -116,9 +104,7 @@ def load_dossiers() -> tuple[dict[str, dict], dict[str, str], dict[str, list[str
                 "uid": d["uid"],
                 "legislature": str(d.get("legislature") or ""),
                 "titre": titre,
-                "titre_chemin": (d.get("titreDossier") or {}).get("titreChemin"),
                 "senat_chemin": ((d.get("titreDossier") or {}).get("senatChemin") or "").strip().lower() or None,
-                "procedure": (d.get("procedureParlementaire") or {}).get("libelle"),
             }
             key = norm(titre)
             if key:
@@ -221,27 +207,6 @@ CREATE TABLE scrutin_votes (
 );
 CREATE INDEX idx_votes_scrutin ON scrutin_votes(scrutin_uid);
 CREATE INDEX idx_votes_acteur ON scrutin_votes(acteur_ref);
-CREATE TABLE dossiers (
-    dossier_ref TEXT PRIMARY KEY, legislature TEXT, titre TEXT,
-    titre_chemin TEXT, senat_chemin TEXT, procedure_libelle TEXT,
-    theme_senat TEXT, theme_source TEXT
-);
-CREATE TABLE documents (
-    document_uid TEXT PRIMARY KEY, dossier_ref TEXT, legislature TEXT,
-    titre_principal TEXT, titre_court TEXT
-);
-CREATE TABLE organes (
-    organe_ref TEXT PRIMARY KEY, code_type TEXT, libelle TEXT,
-    libelle_abrev TEXT, libelle_abrege TEXT, date_debut TEXT, date_fin TEXT,
-    legislature TEXT
-);
-CREATE TABLE acteurs (
-    acteur_ref TEXT PRIMARY KEY, prenom TEXT, nom TEXT, trigramme TEXT, date_nais TEXT
-);
-CREATE TABLE mandats (
-    mandat_uid TEXT PRIMARY KEY, acteur_ref TEXT, organe_ref TEXT,
-    type_organe TEXT, date_debut TEXT, date_fin TEXT, qualite TEXT
-);
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
 """
 
@@ -252,27 +217,6 @@ def build(conn: sqlite3.Connection) -> dict:
     dossiers, title_index, doc_titles = load_dossiers()
 
     conn.executescript(SCHEMA)
-    dossier_rows = []
-    for d in dossiers.values():
-        theme, theme_source = resolve_theme(d["uid"], dossiers, by_url, by_title)
-        dossier_rows.append(
-            (d["uid"], d["legislature"], d["titre"], d["titre_chemin"],
-             d["senat_chemin"], d["procedure"], theme, theme_source)
-        )
-    conn.executemany("INSERT INTO dossiers VALUES (?,?,?,?,?,?,?,?)", dossier_rows)
-
-    zz = zipfile.ZipFile(RAW / "DossiersLegislatifs17.json.zip")
-    documents = []
-    for name in zz.namelist():
-        if "/document/" not in name or not name.endswith(".json"):
-            continue
-        doc = json.loads(zz.read(name))["document"]
-        titres = doc.get("titres") or {}
-        documents.append(
-            (doc["uid"], doc.get("dossierRef"), str(doc.get("legislature") or ""),
-             titres.get("titrePrincipal"), titres.get("titrePrincipalCourt"))
-        )
-    conn.executemany("INSERT OR IGNORE INTO documents VALUES (?,?,?,?,?)", documents)
 
     votes_rows: list[tuple] = []
     zs = zipfile.ZipFile(RAW / "Scrutins17.json.zip")
@@ -361,36 +305,6 @@ def build(conn: sqlite3.Connection) -> dict:
     return stats
 
 
-def load_acteurs(conn: sqlite3.Connection) -> dict:
-    z = zipfile.ZipFile(RAW / "ActeursOrganes17.json.zip")
-    organes, acteurs, mandats = [], [], []
-    for name in z.namelist():
-        if "/organe/" in name and name.endswith(".json"):
-            o = json.loads(z.read(name))["organe"]
-            vi = o.get("viMoDe") or {}
-            organes.append((o["uid"], o.get("codeType"), o.get("libelle"), o.get("libelleAbrev"),
-                            o.get("libelleAbrege"), text_of(vi.get("dateDebut")), text_of(vi.get("dateFin")),
-                            o.get("legislature")))
-        elif "/acteur/" in name and name.endswith(".json"):
-            a = json.loads(z.read(name))["acteur"]
-            ident = (a.get("etatCivil") or {}).get("ident") or {}
-            acteurs.append((text_of(a.get("uid")), text_of(ident.get("prenom")), text_of(ident.get("nom")),
-                            text_of(ident.get("trigramme")),
-                            text_of(((a.get("etatCivil") or {}).get("infoNaissance") or {}).get("dateNais"))))
-            for m in as_list((a.get("mandats") or {}).get("mandat")):
-                refs = m.get("organes") or {}
-                organe_ref = refs.get("organeRef") if isinstance(refs, dict) else None
-                if isinstance(organe_ref, list):
-                    organe_ref = "|".join(text_of(x) or "" for x in organe_ref)
-                mandats.append((m.get("uid"), text_of(m.get("acteurRef")), text_of(organe_ref), m.get("typeOrgane"),
-                                text_of(m.get("dateDebut")), text_of(m.get("dateFin")),
-                                ((m.get("infosQualite") or {}).get("codeQualite"))))
-    conn.executemany("INSERT OR REPLACE INTO organes VALUES (?,?,?,?,?,?,?,?)", organes)
-    conn.executemany("INSERT OR REPLACE INTO acteurs VALUES (?,?,?,?,?)", acteurs)
-    conn.executemany("INSERT OR REPLACE INTO mandats VALUES (?,?,?,?,?,?,?)", mandats)
-    return {"organes": len(organes), "acteurs": len(acteurs), "mandats": len(mandats)}
-
-
 def main() -> int:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if DB_PATH.exists():
@@ -398,7 +312,6 @@ def main() -> int:
     conn = sqlite3.connect(DB_PATH)
     try:
         stats = build(conn)
-        stats.update(load_acteurs(conn))
         votes = conn.execute("SELECT COUNT(*) FROM scrutin_votes").fetchone()[0]
         cells = conn.execute("SELECT COUNT(*) FROM scrutin_groupes").fetchone()[0]
         stats["votes_individuels"] = votes

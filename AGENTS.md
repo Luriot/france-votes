@@ -26,8 +26,6 @@
   indexés comme `meta.groupes`.
 - Thèmes = base Dosleg du Sénat uniquement (l'open data AN n'expose pas d'`indexation` en
   législature 17) ; UDR = fusion `PO847173`/`PO872880`/`PO845520` ; 14 scrutins `PO0` exclus.
-- `python pipeline/summary.py <numero>` — inspecter un scrutin.
-- `python pipeline/verify_officiel.py` — comparer la base aux pages officielles de l'AN.
 
 ## Front & sécurité
 

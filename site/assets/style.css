@@ -165,10 +165,6 @@ section.block { margin-top: var(--section); }
 .dark h2, .dark h3 { color: var(--paper); }
 .dark p { color: color-mix(in srgb, var(--paper) 82%, transparent); }
 .dark a { color: var(--lime); }
-.earth { background: var(--earth); color: var(--paper); }
-.earth h2 { color: var(--paper); }
-.earth p, .earth li { color: color-mix(in srgb, var(--paper) 78%, transparent); }
-.earth a { color: var(--lime); }
 
 /* --- cartes --- */
 
@@ -179,11 +175,10 @@ section.block { margin-top: var(--section); }
   padding: clamp(1.1rem, 2.4vw, 1.6rem);
 }
 .card + .card { margin-top: var(--gap); }
-.dark .card, .earth .card { background: color-mix(in srgb, var(--paper) 10%, transparent); border-color: color-mix(in srgb, var(--paper) 22%, transparent); box-shadow: none; }
 
 /* --- tags --- */
 
-.badge, .tag {
+.badge {
   display: inline-block; font-size: 0.72rem; line-height: 1;
   padding: 0.38rem 0.6rem; border-radius: var(--radius-tiny);
   background: var(--linen); color: var(--ink);
@@ -333,8 +328,6 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 .vote-title a { color: var(--ink); text-decoration: none; font-weight: 500; }
 .vote-title a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 .filters-result { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); margin: 0.2rem 0 0.9rem; }
-.posbar { display: inline-flex; height: 0.7rem; width: 6.6rem; border-radius: 100vw; overflow: hidden; }
-.posbar i { display: block; height: 100%; }
 .pos-pour { background: var(--pour); } .pos-contre { background: var(--contre); }
 .pos-abstention { background: var(--abstention); } .pos-absent { background: var(--absent); }
 .stance {
@@ -357,7 +350,6 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 
 details.aide { border-radius: var(--radius-small); padding: 0.75rem 1rem; margin: 0.8rem 0; background: var(--linen); }
 details.aide summary { cursor: pointer; font-weight: 600; }
-.dark details.aide { background: color-mix(in srgb, var(--paper) 12%, transparent); }
 
 /* --- footer --- */
 
@@ -373,12 +365,11 @@ footer.site .bottom { margin-top: var(--section); padding-top: 1.2rem; border-to
 
 .note { font-size: 0.94rem; color: var(--ink-soft); }
 .fineprint { font-size: 0.78rem; color: var(--ink-faint); margin: 0.5rem 0 0; }
-.dark .fineprint, .earth .fineprint { color: color-mix(in srgb, var(--paper) 65%, transparent); }
+.dark .fineprint { color: color-mix(in srgb, var(--paper) 65%, transparent); }
 .codeblock { overflow-x: auto; background: var(--linen); border-radius: var(--radius-small); padding: 0.9rem; font-family: var(--font-mono); font-size: 0.82rem; }
 .list-tight { margin: 0.4rem 0 0; }
 .loading { color: var(--ink-faint); font-style: italic; }
 .erreur { color: var(--contre); font-weight: 700; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* --- signature : 4 étincelles au clic (56px, 650ms, ease power) --- */
 

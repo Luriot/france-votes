@@ -26,12 +26,6 @@ SOURCES = [
         "page": "https://data.assemblee-nationale.fr/travaux-parlementaires/votes",
     },
     {
-        "name": "Acteurs, mandats et organes (AN)",
-        "file": "ActeursOrganes17.json.zip",
-        "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/amo/deputes_senateurs_ministres_legislature/AMO20_dep_sen_min_tous_mandats_et_organes.json.zip",
-        "page": "https://data.assemblee-nationale.fr/acteurs/deputes-senateurs-ministres-de-la-legislature",
-    },
-    {
         "name": "Dossiers législatifs (AN)",
         "file": "DossiersLegislatifs17.json.zip",
         "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip",

@@ -32,44 +32,37 @@ GROUP_COLORS = [
 ]
 POS_CODE = {"pour": 1, "contre": -1, "abstention": 0, None: None}
 CAP_THEME = 0.15
-MIN_EXPRIMES = 1
 SEED = 20270901
 BOOTSTRAP = 300
 UNCLASSIFIED = "Non classé"
-
-Theme = str
 
 
 def load_scrutins(conn: sqlite3.Connection) -> list[dict]:
     scrutins: dict[str, dict] = {}
     rows = conn.execute(
         """
-        SELECT s.uid, s.numero, s.date, s.type_code, s.type_libelle, s.sort_code,
-               s.titre, s.theme, s.theme_source, s.dossier_ref_apparie, s.appariement,
-               s.groupes_valides, g.groupe_canonique, g.position_calculee, g.position_officielle,
-               g.participation, g.pour, g.contre, g.abstentions, g.non_votants, g.nombre_membres
+        SELECT s.uid, s.numero, s.date, s.type_code, s.sort_code, s.titre, s.theme,
+               s.groupes_valides, g.groupe_canonique, g.position_calculee,
+               g.position_officielle, g.participation
         FROM scrutins s
         LEFT JOIN scrutin_groupes g ON g.scrutin_uid = s.uid
         ORDER BY s.numero
         """
     )
-    for (uid, numero, date, type_code, type_libelle, sort_code, titre, theme, theme_source,
-         dossier, appariement, valides, sigle, position, position_officielle, participation,
-         pour, contre, abstentions, non_votants, membres) in rows:
+    for (uid, numero, date, type_code, sort_code, titre, theme, valides,
+         sigle, position, position_officielle, participation) in rows:
         s = scrutins.get(uid)
         if s is None:
             s = scrutins[uid] = {
                 "uid": uid, "numero": numero, "date": date, "type_code": type_code,
-                "type_libelle": type_libelle, "sort_code": sort_code, "titre": titre,
-                "theme": theme or UNCLASSIFIED, "theme_source": theme_source,
-                "dossier": dossier, "appariement": appariement, "groupes_valides": valides,
-                "positions": {}, "positions_officielles": {}, "parts": {}, "counts": {},
+                "sort_code": sort_code, "titre": titre, "theme": theme or UNCLASSIFIED,
+                "groupes_valides": valides,
+                "positions": {}, "positions_officielles": {}, "parts": {},
             }
         if sigle:
             s["positions"][sigle] = position
             s["positions_officielles"][sigle] = position_officielle
             s["parts"][sigle] = participation or 0.0
-            s["counts"][sigle] = [pour or 0, contre or 0, abstentions or 0, non_votants or 0, membres or 0]
     return list(scrutins.values())
 
 
@@ -180,43 +173,16 @@ def all_pairs(scrutins: list[dict], scheme: str = "primary", rule: str = "calcul
 
 
 def leave_one_theme_out(scrutins: list[dict]) -> dict:
-    themes = sorted({s["theme"] for s in scrutins})
-    base = all_pairs(scrutins)
+    """Amplitude min/max de l'accord pour chaque paire quand on retire un thème entier."""
     result: dict[str, dict] = {}
-    for theme in themes:
+    for theme in sorted({s["theme"] for s in scrutins}):
         subset = [s for s in scrutins if s["theme"] != theme]
-        variant = all_pairs(subset)
-        for key, value in variant.items():
-            entry = result.setdefault(key, {"min": 1.0, "max": 0.0, "sans": {}}
-                                      )
+        for key, value in all_pairs(subset).items():
             if value["accord"] is None:
                 continue
+            entry = result.setdefault(key, {"min": 1.0, "max": 0.0})
             entry["min"] = min(entry["min"], value["accord"])
             entry["max"] = max(entry["max"], value["accord"])
-            entry["sans"][theme] = value["accord"]
-    for key, entry in result.items():
-        if entry["min"] == 1.0 and entry["max"] == 0.0:
-            entry["min"] = entry["max"] = base[key]["accord"]
-    return result
-
-
-def by_period(scrutins: list[dict]) -> dict:
-    def period(date: str) -> str:
-        year, month = int(date[:4]), int(date[5:7])
-        return f"{year}-{'H1' if month <= 6 else 'H2'}"
-
-    result: dict[str, dict] = {}
-    for p in sorted({period(s["date"]) for s in scrutins if s["date"]}):
-        subset = [s for s in scrutins if period(s["date"]) == p]
-        result[p] = all_pairs(subset)
-    return result
-
-
-def by_type(scrutins: list[dict]) -> dict:
-    result: dict[str, dict] = {}
-    for code in sorted({s["type_code"] for s in scrutins if s["type_code"]}):
-        subset = [s for s in scrutins if s["type_code"] == code]
-        result[code] = all_pairs(subset)
     return result
 
 
@@ -333,7 +299,7 @@ def mds_coordinates(pair_matrix: dict) -> list[dict]:
     return [{"sigle": SIGLES[i], "x": coords[i][0], "y": coords[i][1]} for i in range(n)]
 
 
-def questionnaire_items(scrutins: list[dict], per_theme: int = 3) -> list[dict]:
+def questionnaire_items(scrutins: list[dict]) -> list[dict]:
     by_theme: dict[str, list[tuple[float, dict]]] = defaultdict(list)
     for s in scrutins:
         if s["poids_base"] <= 0 or s["theme"] == UNCLASSIFIED:
@@ -349,7 +315,7 @@ def questionnaire_items(scrutins: list[dict], per_theme: int = 3) -> list[dict]:
     items = []
     for theme, entries in sorted(by_theme.items()):
         entries.sort(key=lambda x: (-x[0], x[1]["numero"]))
-        for entropy, s in entries[:per_theme]:
+        for entropy, s in entries[:3]:
             items.append({
                 "uid": s["uid"], "numero": s["numero"], "date": s["date"], "theme": theme,
                 "titre": s["titre"], "entropie": round(entropy, 4),
@@ -360,26 +326,12 @@ def questionnaire_items(scrutins: list[dict], per_theme: int = 3) -> list[dict]:
     return items
 
 
-def matrix_from_pairs(pairs: dict, field: str = "accord") -> list[list]:
-    n = len(SIGLES)
-    matrix = [[None] * n for _ in range(n)]
-    for i, a in enumerate(SIGLES):
-        matrix[i][i] = 1.0 if field == "accord" else None
-        for j, b in enumerate(SIGLES):
-            if i == j:
-                continue
-            a1, b1 = (a, b) if i < j else (b, a)
-            matrix[i][j] = pairs[f"{a1}|{b1}"].get(field)
-    return matrix
-
-
 def main() -> int:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
         scrutins = load_scrutins(conn)
         built_at = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()[0]
-        sources = json.loads((ROOT / "data" / "manifest.json").read_text(encoding="utf-8"))["sources"]
     finally:
         conn.close()
 
@@ -401,9 +353,6 @@ def main() -> int:
     }
     print("leave-one-theme-out...")
     loto = leave_one_theme_out(scrutins)
-    print("par période / par type...")
-    periods = by_period(scrutins)
-    types = by_type(scrutins)
     print(f"bootstrap ({BOOTSTRAP} rééchantillonnages)...")
     boot = bootstrap(scrutins)
     coords = mds_coordinates(primary)
@@ -414,7 +363,7 @@ def main() -> int:
         for variant in variants.values():
             if variant[key]["accord"] is not None:
                 values.append(variant[key]["accord"])
-        entry = loto.get(key, {"min": stat["accord"], "max": stat["accord"], "sans": {}})
+        entry = loto.get(key, {"min": stat["accord"], "max": stat["accord"]})
         if entry["min"] is not None:
             values.append(entry["min"])
         if entry["max"] is not None:
@@ -424,7 +373,6 @@ def main() -> int:
             "accord": stat["accord"],
             "amplitude_min": round(min(values), 4) if values else None,
             "amplitude_max": round(max(values), 4) if values else None,
-            "leave_one_theme": entry["sans"],
             "bootstrap": boot.get(key),
         }
 
@@ -437,10 +385,8 @@ def main() -> int:
             "r": s["sort_code"], "ti": s["titre"], "th": s["theme"],
             "p": [POS_CODE[s["positions"].get(sigle)] for sigle in SIGLES],
             "q": [round(s["parts"].get(sigle, 0.0), 4) for sigle in SIGLES],
-            "c": [s["counts"].get(sigle, []) for sigle in SIGLES],
             "b": s["poids_base"], "f": round(s["facteur_theme"], 6),
             "dup": s["dup_of"], "ind": 1 if s.get("indisponible") else 0,
-            "ma": s["appariement"], "dr": s["dossier"],
         }
         scrutin_export.append(scrutins_row)
 
@@ -448,14 +394,6 @@ def main() -> int:
         "version": "1.0",
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "data_built_at": built_at,
-        "sources": sources,
-        "parametres": {
-            "plafond_theme": CAP_THEME,
-            "graine_bootstrap": SEED,
-            "iterations_bootstrap": BOOTSTRAP,
-            "regle_position": "majorité stricte parmi les votes exprimés (pour/contre/abstention), sinon non déterminée",
-            "ponderation": "base × facteur thème (plafond 15 %) × min(participation des deux groupes)",
-        },
         "compteurs": {
             "scrutins": len(scrutins),
             "scrutins_retenus": len(retained),
@@ -463,7 +401,6 @@ def main() -> int:
             "scrutins_indisponibles": sum(1 for s in scrutins if s.get("indisponible")),
             "scrutins_themes": sum(1 for s in scrutins if s["theme"] != UNCLASSIFIED),
             "themes": theme_counts,
-            "periodes": sorted(periods),
             "paires_avec_accord": sum(1 for v in primary.values() if v["accord"] is not None),
         },
         "groupes": [{"sigle": s, "nom": nom, "couleur": GROUP_COLORS[i], "refs": [r]}
@@ -476,15 +413,8 @@ def main() -> int:
         "agreement.json": {
             "sigles": SIGLES,
             "principal": primary,
-            "matrices": {
-                "accord": matrix_from_pairs(primary, "accord"),
-                "kappa": matrix_from_pairs(primary, "kappa"),
-                "n": matrix_from_pairs(primary, "n"),
-            },
             "variantes": {name: pairs for name, pairs in variants.items()},
             "robustesse": robustness,
-            "periodes": periods,
-            "types": types,
             "mds": coords,
         },
         "questionnaire.json": {"questions": questionnaire_items(scrutins)},

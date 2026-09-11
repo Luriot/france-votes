@@ -65,8 +65,8 @@ class TestScores(unittest.TestCase):
             make_scrutin({"RN": "pour", "EPR": "contre"}, theme="Y"),
         ]
         entry = score.leave_one_theme_out(scrutins)["RN|EPR"]
-        self.assertAlmostEqual(entry["sans"]["X"], 0.0)
-        self.assertAlmostEqual(entry["sans"]["Y"], 1.0)
+        self.assertAlmostEqual(entry["min"], 0.0)
+        self.assertAlmostEqual(entry["max"], 1.0)
 
     def test_kappa(self):
         self.assertAlmostEqual(score.cohen_kappa({"pour": 10}, {"pour": 10}, 10, 10), 1.0)

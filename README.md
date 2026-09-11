@@ -29,8 +29,6 @@ pipeline/
   build_db.py    parsing des flux, appariements dossier/thème, base SQLite
   score.py       pondérations, accords, kappa, robustesse, exports du site
   run_all.py     les trois étapes d'affilée
-  summary.py     contrôle rapide (chiffres clés, détail d'un scrutin)
-  verify_officiel.py compare la base aux pages officielles de l'AN
   check_site.mjs vérification du JS de site contre les exports
   tests/         36 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db

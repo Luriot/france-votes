@@ -54,7 +54,7 @@
       const p = s.p[i];
       const cls = p === 1 ? "pos-pour" : p === -1 ? "pos-contre" : p === 0 ? "pos-abstention" : "pos-absent";
       const label = p === 1 ? "pour" : p === -1 ? "contre" : p === 0 ? "abstention" : "non déterminée";
-      return `<span title="${sigle} : ${label}" style="display:inline-block;width:.62rem;height:.62rem;margin-right:2px;border-radius:2px" class="${cls}"></span>`;
+      return `<span title="${VV.esc(sigle)} : ${label}" style="display:inline-block;width:.62rem;height:.62rem;margin-right:2px;border-radius:2px" class="${cls}"></span>`;
     }).join("");
   }
 
@@ -69,7 +69,7 @@
           <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
           <div style="margin-top:.2rem">
             <span class="badge theme">${VV.esc(s.th)}</span>
-            <span class="badge neutre">${TYPES[s.t] || s.t}</span>
+            <span class="badge neutre">${VV.esc(TYPES[s.t] || s.t)}</span>
             ${s.b === 0 ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé dans les scores">doublon</span>` : ""}
             ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
           </div>

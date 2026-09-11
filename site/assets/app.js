@@ -1,8 +1,57 @@
 /* Votes 2027 — utilitaires partagés (aucune dépendance) */
 
+document.documentElement.classList.add("js");
+
 const VV = (() => {
   const cache = {};
   let state = null;
+
+  function initSignature() {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (!reduce) {
+      document.addEventListener("click", (event) => {
+        for (let i = 0; i < 3; i += 1) {
+          const spark = document.createElement("span");
+          spark.className = "spark";
+          spark.textContent = "✳";
+          spark.setAttribute("aria-hidden", "true");
+          const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
+          const distance = 20 + Math.random() * 26;
+          spark.style.left = `${event.clientX}px`;
+          spark.style.top = `${event.clientY}px`;
+          spark.style.setProperty("--dx", `${(Math.cos(angle) * distance).toFixed(1)}px`);
+          spark.style.setProperty("--dy", `${(Math.sin(angle) * distance).toFixed(1)}px`);
+          spark.style.animationDelay = `${i * 45}ms`;
+          document.body.append(spark);
+          spark.addEventListener("animationend", () => spark.remove(), { once: true });
+        }
+      });
+      let lastY = window.scrollY || 0;
+      window.addEventListener?.("scroll", () => {
+        const header = document.querySelector("header.site");
+        const y = window.scrollY || 0;
+        if (y > lastY + 8 && y > 120) header?.classList.add("is-hidden");
+        else if (y < lastY - 8 || y <= 120) header?.classList.remove("is-hidden");
+        lastY = y;
+      }, { passive: true });
+    }
+    const targets = document.querySelectorAll("main .block, .hero > *");
+    if (!("IntersectionObserver" in window)) {
+      targets.forEach((el) => el.classList.add("is-in"));
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      let delay = 0;
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.style.transitionDelay = `${delay}s`;
+        delay = Math.min(delay + 0.09, 0.36);
+        entry.target.classList.add("is-in");
+        observer.unobserve(entry.target);
+      }
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
+    targets.forEach((el) => observer.observe(el));
+  }
 
   async function loadJSON(name) {
     if (cache[name]) return cache[name];
@@ -27,7 +76,6 @@ const VV = (() => {
     return meta;
   }
 
-  const positionCode = { pour: 1, contre: -1, abstention: 0, null: null };
   const POSITION_NAME = { 1: "pour", 0: "abstention", "-1": "contre" };
 
   function fmtPct(value) {
@@ -46,7 +94,8 @@ const VV = (() => {
   }
 
   function sourceUrl(scrutin) {
-    return `https://www.assemblee-nationale.fr/dyn/17/scrutins/${scrutin.n}`;
+    const numero = String(scrutin?.n ?? "").replace(/\D/g, "");
+    return `https://www.assemblee-nationale.fr/dyn/17/scrutins/${numero}`;
   }
 
   /* --- Calcul des accords (même formule que le pipeline) --------------- */
@@ -88,28 +137,26 @@ const VV = (() => {
     return out;
   }
 
+  function pairKey(a, b) {
+    const order = state.meta.groupes.map((g) => g.sigle);
+    return order.indexOf(a) < order.indexOf(b) ? `${a}|${b}` : `${b}|${a}`;
+  }
+
   function heatColor(value) {
-    if (value === null || value === undefined) return "#f0ece2";
+    if (value === null || value === undefined) return "#eee4cd";
     const t = Math.max(0, Math.min(1, (value - 0.2) / 0.7));
-    const from = [240, 236, 226], to = [15, 91, 86];
+    const from = [236, 223, 194], to = [163, 74, 30];
     const mix = from.map((c, i) => Math.round(c + (to[i] - c) * t));
     return `rgb(${mix[0]},${mix[1]},${mix[2]})`;
   }
 
   function textOn(value) {
     if (value === null || value === undefined) return "var(--ink-faint)";
-    return value > 0.62 ? "#fff" : "var(--ink)";
+    return value > 0.62 ? "#fffdf4" : "var(--ink)";
   }
 
-  function posBar(counts) {
-    const [pour, contre, abst, absent] = counts;
-    const total = Math.max(1, pour + contre + abst + absent);
-    const pct = (v) => `${((v / total) * 100).toFixed(1)}%`;
-    return `<span class="posbar" role="img" aria-label="pour ${pour}, contre ${contre}, abstention ${abst}, absents ${absent}">` +
-      `<i class="pos-pour" style="width:${pct(pour)}"></i>` +
-      `<i class="pos-contre" style="width:${pct(contre)}"></i>` +
-      `<i class="pos-abstention" style="width:${pct(abst)}"></i>` +
-      `<i class="pos-absent" style="width:${pct(absent)}"></i></span>`;
+  function safeColor(value) {
+    return /^#[0-9a-fA-F]{6}$/.test(String(value)) ? String(value) : "#888888";
   }
 
   function stance(value) {
@@ -117,8 +164,8 @@ const VV = (() => {
       1: ["pour", "a voté pour"], 0: ["abstention", "s'est abstenu"], "-1": ["contre", "a voté contre"],
     };
     if (value === null) return `<span class="stance" data-p="n" title="position non déterminée">n.d.</span>`;
-    const [label, title] = map[value];
-    return `<span class="stance" data-p="${value}" title="${title}">${label}</span>`;
+    const [label, title] = map[value] || ["n.d.", "position non déterminée"];
+    return `<span class="stance" data-p="${encodeURIComponent(String(value))}" title="${title}">${label}</span>`;
   }
 
   function esc(text) {
@@ -146,8 +193,10 @@ const VV = (() => {
   }
 
   return {
-    loadJSON, loadAll, loadRibbon, get state() { return state; }, positionCode, POSITION_NAME,
-    fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, heatColor, textOn,
-    posBar, stance, esc, period, setText, renderRibbon,
+    loadJSON, loadAll, loadRibbon, get state() { return state; }, POSITION_NAME,
+    fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, heatColor, textOn,
+    stance, esc, safeColor, period, setText, renderRibbon, initSignature,
   };
 })();
+
+VV.initSignature();

@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Votes 2027 — comment votent les groupes à l'Assemblée</title>
   <meta name="description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
   <link rel="stylesheet" href="assets/style.css">
@@ -11,7 +12,7 @@
 <a class="skip-link" href="#contenu">Aller au contenu</a>
 <header class="site">
   <div class="wrap">
-    <div class="site-top">
+    <div class="nav-shell">
       <a class="brand" href="index.html">Votes<span>2027</span></a>
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html" aria-current="page">Comparer</a>
@@ -32,34 +33,49 @@
 
 <main id="contenu" class="wrap">
   <section class="hero">
-    <div>
-      <p class="kicker">Outil citoyen, méthode ouverte</p>
-      <h1>Comment les groupes votent-ils réellement&nbsp;?</h1>
-      <p>Ce site compare les groupes de l'Assemblée nationale à partir de <strong>tous</strong> leurs
-      scrutins publics, pas d'une sélection de votes choisis à la main. Chaque score est recalculable :
-      voici les votes qui rapprochent deux groupes, ceux qui les opposent, et à quel point le résultat
-      dépend de la méthode.</p>
-      <p class="note">Aucun jugement « gauche / droite » n'est injecté
-      dans les données. Les positions affichées sortent des listes de vote officielles ; la carte est
-      calculée après coup, uniquement pour la lecture.</p>
+    <div class="hero-copy">
+      <p class="eyebrow">Outil citoyen · méthode ouverte</p>
+      <h1>Comment les groupes votent-ils
+        <span class="accent">vraiment<svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 14 C 46 5, 96 4, 128 9 S 190 16, 216 7"/></svg></span>&nbsp;?</h1>
+      <p>Ce site compare les groupes de l'Assemblée nationale à partir de <strong>tous</strong>
+      leurs scrutins publics, pas d'une sélection de votes choisis à la main. Chaque score est
+      recalculable : voici les votes qui rapprochent deux groupes, ceux qui les opposent, et à quel
+      point le résultat dépend de la méthode.</p>
       <p><a href="#comparer">Comparer deux groupes →</a> · <a href="questionnaire.html">Répondre sur des votes réels →</a></p>
     </div>
-    <div class="card" role="group" aria-label="Couverture des données">
-      <div class="stats">
-        <div class="stat"><b id="hero-scrutins">…</b><span>scrutins publics analysés</span></div>
-        <div class="stat"><b id="hero-retenus">…</b><span>votes distincts après neutralisation des doublons</span></div>
-        <div class="stat"><b id="hero-themes">…</b><span>scrutins classés par thème (source Sénat)</span></div>
-        <div class="stat"><b id="hero-pct">…</b><span>des scrutins ont un thème officiel traçable</span></div>
+    <aside class="meter" aria-label="Couverture des données">
+      <p class="eyebrow">Couverture</p>
+      <div class="value" id="hero-scrutins">…</div>
+      <p class="label">scrutins publics analysés</p>
+      <div class="segments" aria-hidden="true">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i>
       </div>
-      <p class="fineprint">Source : open data de
-      l'Assemblée nationale, données au <span id="data-date">…</span>. Licence ouverte.</p>
+      <dl>
+        <div><dt>Votes distincts</dt><dd id="hero-retenus">…</dd></div>
+        <div><dt>Scrutins thématisés</dt><dd id="hero-themes">…</dd></div>
+        <div><dt>Part thématisée</dt><dd id="hero-pct">…</dd></div>
+        <div><dt>Doublons neutralisés</dt><dd id="rb-doublons-meter">…</dd></div>
+      </dl>
+      <p class="fineprint">Source : open data de l'Assemblée nationale, données au
+      <span id="data-date">…</span> · thèmes officiels du Sénat.</p>
+    </aside>
+  </section>
+
+  <section class="block" id="groupes">
+    <div class="block-head">
+      <p class="eyebrow">Les acteurs</p>
+      <h2>Les groupes en un coup d'œil</h2>
+      <p>Douze groupes, leur volume de votes et leurs voisins les plus proches. Cliquez sur une carte pour ouvrir la comparaison.</p>
     </div>
+    <div class="group-grid" id="group-grid" aria-live="polite"></div>
   </section>
 
   <section class="block" id="comparer">
     <div class="block-head">
-      <h2>Comparer deux groupes</h2>
-      <p>Cliquez sur une case de la matrice, ou choisissez dans la carte ci-dessous. Filtrez par thème ou par période : tout est recalculé devant vous.</p>
+      <p class="eyebrow">Comparateur</p>
+      <h2 id="ranking-title">Quels groupes votent comme RN ?</h2>
+      <p>Choisissez un groupe de référence, puis un groupe à comparer. Tout se recalcule selon vos filtres.</p>
     </div>
     <div class="controls">
       <div class="field">
@@ -73,21 +89,26 @@
       <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
     </div>
     <div class="card">
-      <div class="table-scroll">
-        <table class="matrix" id="matrix" aria-label="Matrice des taux d'accord entre groupes (en %)"></table>
-      </div>
-      <p class="fineprint">Lecture : pourcentage d'accord
-      pondéré entre deux groupes sur les scrutins où les deux ont une position déterminée. Plus la case
-      est foncée, plus les groupes votent ensemble.</p>
+      <div class="ref-chips" id="ref-chips" role="group" aria-label="Groupe de référence"></div>
+      <ul class="rank-list" id="ranking" aria-live="polite"></ul>
+      <p class="fineprint">Lecture : pourcentage d'accord pondéré sur les scrutins où les deux groupes
+      ont une position déterminée, classé du plus proche au plus éloigné.</p>
     </div>
     <div class="card" id="pair-panel" aria-live="polite">
       <p class="loading">Chargement…</p>
     </div>
     <div class="card" id="variants"></div>
+    <details class="aide">
+      <summary>Voir la matrice complète des 66 paires</summary>
+      <div class="table-scroll">
+        <table class="matrix" id="matrix" aria-label="Matrice des taux d'accord entre groupes (en %)"></table>
+      </div>
+    </details>
   </section>
 
   <section class="block" id="carte">
     <div class="block-head">
+      <p class="eyebrow">Géographie des votes</p>
       <h2>Carte des proximités</h2>
       <p>Positionnement calculé à partir des seuls votes (MDS sur les taux d'accord). Les axes n'ont pas de signification politique préétablie.</p>
     </div>
@@ -97,27 +118,46 @@
     </div>
   </section>
 
-  <section class="block">
-    <div class="block-head">
-      <h2>Ce que ce site ne dit pas</h2>
-    </div>
-    <div class="card">
-      <p>Ce site ne recommande aucun vote et ne prétend pas dire « qui est proche de vous ».</p>
-      <p>Il montre une chose vérifiable : <em>à quels scrutins publics deux groupes ont voté pareil,
-      et selon quelles règles ce constat est établi</em>. Un vote de groupe résume des députés qui
-      peuvent voter différemment ; un scrutin isolé ne définit pas un programme. Les limites sont
-      détaillées sur la <a href="methodologie.html">page méthodologie</a>.</p>
-    </div>
+  <section class="block dark">
+    <p class="eyebrow">Cadre d'usage</p>
+    <h2>Ce que ce site ne dit pas</h2>
+    <p>Ce site ne recommande aucun vote et ne prétend pas dire « qui est proche de vous ».</p>
+    <p>Il montre une chose vérifiable : <em>à quels scrutins publics deux groupes ont voté pareil,
+    et selon quelles règles ce constat est établi</em>. Un vote de groupe résume des députés qui
+    peuvent voter différemment ; un scrutin isolé ne définit pas un programme.</p>
+    <p><a href="methodologie.html">Lire toutes les règles et les limites →</a></p>
   </section>
 </main>
 
 <footer class="site">
   <div class="wrap">
-    <p><strong>Sources</strong> : Assemblée nationale (open data des scrutins, dossiers législatifs,
-    acteurs et organes) ; Sénat (base Dosleg pour les thèmes). Données publiques sous licence ouverte.
-    Chaque vote est relié à sa page officielle sur <span>assemblee-nationale.fr</span>.</p>
-    <p>Pipeline, base de données et tests : voir le dépôt du projet. Les chiffres affichés proviennent
-    du fichier <code>site/data/meta.json</code> généré à la construction.</p>
+    <div class="cols">
+      <div>
+        <h3>Votes 2027</h3>
+        <p>Comparateur neutre et reproductible des votes de l'Assemblée nationale, construit
+        uniquement à partir de données publiques officielles. Aucune sélection éditoriale de votes.</p>
+      </div>
+      <div>
+        <h3>Données</h3>
+        <ul>
+          <li><a href="https://data.assemblee-nationale.fr/travaux-parlementaires/votes" target="_blank" rel="noopener">Scrutins — Assemblée nationale</a></li>
+          <li><a href="https://data.senat.fr/dosleg/" target="_blank" rel="noopener">Thèmes — Sénat (Dosleg)</a></li>
+          <li><a href="votes.html">Explorer les 8 434 scrutins</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Méthode</h3>
+        <ul>
+          <li><a href="methodologie.html">Règles complètes</a></li>
+          <li><a href="questionnaire.html">Questionnaire sur votes réels</a></li>
+          <li><a href="https://github.com/Luriot/france-votes" target="_blank" rel="noopener">Code et pipeline</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom">
+      Données sous licence ouverte · IDL · les chiffres affichés proviennent de
+      <code>site/data/meta.json</code>, généré par le pipeline à chaque construction.
+    </div>
   </div>
 </footer>
 <script src="assets/app.js"></script>

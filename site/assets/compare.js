@@ -10,6 +10,7 @@
   VV.setText("hero-retenus", VV.fmtNum(state.meta.compteurs.scrutins_retenus));
   VV.setText("hero-themes", VV.fmtNum(state.meta.compteurs.scrutins_themes));
   VV.setText("hero-pct", VV.fmtPct(state.meta.compteurs.scrutins_themes / state.meta.compteurs.scrutins));
+  VV.setText("rb-doublons-meter", VV.fmtNum(state.meta.compteurs.doublons));
   VV.setText("data-date", VV.fmtDate(state.meta.data_built_at));
 
   const themes = Object.entries(state.meta.compteurs.themes)
@@ -25,6 +26,7 @@
   }
 
   const selected = { a: "RN", b: "LFI-NFP" };
+  let refGroup = "RN";
 
   function filtered() {
     const theme = selTheme.value;
@@ -53,6 +55,86 @@
 
   function isFiltered() {
     return selTheme.value !== "" || selPeriod.value !== "";
+  }
+
+  /* --- groupes en un coup d'œil --- */
+  function renderGroups() {
+    const grid = document.getElementById("group-grid");
+    if (!grid) return;
+    const pairs = VV.allPairs(state.scrutins);
+    grid.innerHTML = groupes.map((g, gi) => {
+      const determined = state.scrutins.filter((s) => s.p[gi] !== null);
+      const participation = determined.length
+        ? determined.reduce((acc, s) => acc + s.q[gi], 0) / determined.length
+        : 0;
+      const others = sigles
+        .filter((sigle) => sigle !== g.sigle)
+        .map((sigle) => ({ sigle, ...pairs[VV.pairKey(g.sigle, sigle)] }))
+        .filter((x) => x.accord !== null)
+        .sort((a, b) => b.accord - a.accord);
+      const top = others[0], low = others[others.length - 1];
+      return `<button type="button" class="group-card" data-sigle="${VV.esc(g.sigle)}">
+        <span class="sigle">${VV.esc(g.sigle)}</span>
+        <span class="nom">${VV.esc(g.nom)}</span>
+        <span class="swatch" style="background:${VV.safeColor(g.couleur)}"></span>
+        <dl>
+          <dt>scrutins</dt><dd>${VV.fmtNum(determined.length)}</dd>
+          <dt>participation</dt><dd>${VV.fmtPct(participation)}</dd>
+          <dt>plus proche</dt><dd>${VV.esc(top?.sigle ?? "–")} · ${VV.fmtPct(top?.accord)}</dd>
+          <dt>plus distant</dt><dd>${VV.esc(low?.sigle ?? "–")} · ${VV.fmtPct(low?.accord)}</dd>
+        </dl>
+      </button>`;
+    }).join("");
+    grid.querySelectorAll(".group-card").forEach((btn) => btn.addEventListener("click", () => {
+      selected.a = btn.dataset.sigle;
+      if (selected.b === selected.a) selected.b = sigles.find((s) => s !== selected.a);
+      renderAll();
+      document.getElementById("comparer").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  }
+
+  /* --- classement de proximité --- */
+  function renderRefChips() {
+    const box = document.getElementById("ref-chips");
+    if (!box) return;
+    box.innerHTML = groupes.map((g) =>
+      `<button type="button" data-sigle="${VV.esc(g.sigle)}" aria-pressed="${g.sigle === refGroup}">${VV.esc(g.sigle)}</button>`
+    ).join("");
+    box.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", () => {
+      refGroup = btn.dataset.sigle;
+      selected.a = refGroup;
+      if (selected.b === refGroup) selected.b = sigles.find((s) => s !== refGroup);
+      renderAll();
+    }));
+  }
+
+  function renderRanking() {
+    const list = document.getElementById("ranking");
+    if (!list) return;
+    const scrutins = filtered();
+    const pairs = VV.allPairs(scrutins);
+    const rows = sigles
+      .filter((sigle) => sigle !== refGroup)
+      .map((sigle) => ({ sigle, ...pairs[VV.pairKey(refGroup, sigle)] }))
+      .filter((x) => x.accord !== null)
+      .sort((a, b) => b.accord - a.accord);
+    list.innerHTML = rows.map((x, i) => {
+      const meta = groupes.find((g) => g.sigle === x.sigle);
+      return `<li><button type="button" class="rank-row" data-sigle="${VV.esc(x.sigle)}" aria-pressed="${selected.a === refGroup && selected.b === x.sigle}">
+        <span class="who"><i style="background:${VV.safeColor(meta.couleur)}"></i>${i + 1}. ${VV.esc(x.sigle)}
+          <span class="why">${VV.fmtNum(x.n)} votes partagés</span></span>
+        <span class="track"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>
+        <span class="pct">${VV.fmtPct(x.accord)}</span>
+      </button></li>`;
+    }).join("");
+    list.querySelectorAll(".rank-row").forEach((btn) => btn.addEventListener("click", () => {
+      selected.a = refGroup;
+      selected.b = btn.dataset.sigle;
+      renderAll();
+      document.getElementById("pair-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    const title = document.getElementById("ranking-title");
+    if (title) title.textContent = `Quels groupes votent comme ${refGroup} ?`;
   }
 
   /* --- matrice --- */
@@ -86,7 +168,7 @@
         if (row.sigle === col.sigle) {
           td.className = "diag";
         } else {
-          const key = [row.sigle, col.sigle].sort().join("|");
+          const key = VV.pairKey(row.sigle, col.sigle);
           const stat = pairs[key];
           const value = stat ? stat.accord : null;
           const btn = document.createElement("button");
@@ -128,10 +210,11 @@
     ];
     for (const p of pts) {
       const meta = groupes.find((g) => g.sigle === p.sigle);
+      const sigle = VV.esc(p.sigle);
       parts.push(
-        `<g class="pt" data-sigle="${p.sigle}" role="button" tabindex="0" aria-label="Groupe ${p.sigle}">` +
-        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="11" fill="${meta.couleur}"></circle>` +
-        `<text x="${(sx(p.x) + 14).toFixed(1)}" y="${(sy(p.y) + 4).toFixed(1)}">${p.sigle}</text></g>`
+        `<g class="pt" data-sigle="${sigle}" role="button" tabindex="0" aria-label="Groupe ${sigle}">` +
+        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="11" fill="${VV.safeColor(meta?.couleur)}"></circle>` +
+        `<text x="${(sx(p.x) + 14).toFixed(1)}" y="${(sy(p.y) + 4).toFixed(1)}">${sigle}</text></g>`
       );
     }
     parts.push(`<text x="${pad}" y="${h - 12}" style="font-size:11px;fill:var(--ink-faint)">Position calculée à partir des votes (MDS) — pas d'axe politique interprété</text>`);
@@ -149,12 +232,12 @@
     const pairs = VV.allPairs(scrutins);
     const list = sigles
       .filter((s) => s !== sigle)
-      .map((s) => ({ sigle: s, ...pairs[[sigle, s].sort().join("|")] }))
+      .map((s) => ({ sigle: s, ...pairs[VV.pairKey(sigle, s)] }))
       .filter((x) => x.accord !== null)
       .sort((x, y) => y.accord - x.accord);
     const box = document.getElementById("map-panel");
-    box.innerHTML = `<h3>${sigle} — groupes les plus proches</h3>` +
-      list.slice(0, 6).map((x) => `<div class="result-row"><span class="stance">${x.sigle}</span>` +
+    box.innerHTML = `<h3>${VV.esc(sigle)} — groupes les plus proches</h3>` +
+      list.slice(0, 6).map((x) => `<div class="result-row"><span class="stance">${VV.esc(x.sigle)}</span>` +
         `<span class="bar"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>` +
         `<b>${VV.fmtPct(x.accord)}</b></div>`).join("") +
       `<p style="font-size:.78rem;color:var(--ink-faint);margin:.5rem 0 0">accord pondéré sur les scrutins partagés avec le groupe le plus proche (${VV.fmtNum(list[0]?.n ?? 0)} votes)</p>`;
@@ -163,19 +246,19 @@
   /* --- détail de paire --- */
   function renderPair() {
     const scrutins = filtered();
-    const key = [selected.a, selected.b].sort().join("|");
+    const key = VV.pairKey(selected.a, selected.b);
     const stat = VV.pairStats(scrutins, selected.a, selected.b);
     const kap = kappa(scrutins, selected.a, selected.b);
     const rob = state.agreement.robustesse[key];
     const box = document.getElementById("pair-panel");
     if (!stat || stat.accord === null) {
-      box.innerHTML = `<h2>${selected.a} ↔ ${selected.b}</h2><p class="loading">Pas assez de votes partagés avec ces filtres.</p>`;
+      box.innerHTML = `<h2>${VV.esc(selected.a)} ↔ ${VV.esc(selected.b)}</h2><p class="loading">Pas assez de votes partagés avec ces filtres.</p>`;
       return;
     }
     const ia = sigles.indexOf(selected.a), ib = sigles.indexOf(selected.b);
     const shared = scrutins.filter((s) => s.p[ia] !== null && s.p[ib] !== null);
 
-    const byTheme = {};
+    const byTheme = Object.create(null);
     for (const s of shared) {
       byTheme[s.th] = byTheme[s.th] || [];
       byTheme[s.th].push(s);
@@ -185,6 +268,12 @@
       .filter((x) => x.n >= 5)
       .sort((x, y) => y.accord - x.accord);
 
+    const best = themeRows[0], worst = themeRows[themeRows.length - 1];
+    const bilan = `${selected.a} et ${selected.b} ont voté de la même manière sur ${VV.fmtPct(stat.accord)} ` +
+      `de leurs ${VV.fmtNum(stat.n)} votes partagés` +
+      (best ? ` — point de convergence maximal sur « ${VV.esc(best.theme)} » (${VV.fmtPct(best.accord)})` : "") +
+      (worst && worst !== best ? `, désaccord maximal sur « ${VV.esc(worst.theme)} » (${VV.fmtPct(worst.accord)}).` : ".");
+
     const withWeights = shared.map((s) => {
       const w = s.b * s.f * Math.min(s.q[ia], s.q[ib]);
       return { s, w, agree: s.p[ia] === s.p[ib] };
@@ -192,16 +281,17 @@
     const divergences = withWeights.filter((x) => !x.agree).slice(0, 12);
     const convergences = withWeights.filter((x) => x.agree).slice(0, 12);
 
-    const voteRow = ({ s, w, agree }) => `
-      <tr>
-        <td class="num">${VV.fmtDate(s.d)}</td>
-        <td class="vote-title"><a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
-          <div style="margin-top:.15rem"><span class="badge theme">${VV.esc(s.th)}</span>
-          ${s.dup ? `<span class="badge neutre" title="Vecteur identique à ${VV.esc(s.dup)}">doublon neutralisé</span>` : ""}
-          ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}</div></td>
-        <td class="num">${VV.stance(s.p[ia])} ${VV.stance(s.p[ib])}</td>
-        <td class="num" title="poids du vote dans le calcul">${w.toFixed(2)}</td>
-      </tr>`;
+    const voteItem = ({ s, w, agree }) => `
+      <li>
+        <div class="meta">
+          <span class="date">${VV.fmtDate(s.d)}</span>
+          <span class="badge theme">${VV.esc(s.th)}</span>
+          ${s.dup ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé">doublon</span>` : ""}
+          ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
+        </div>
+        <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
+        <div class="verdict">${VV.stance(s.p[ia])} ${VV.stance(s.p[ib])} · <strong>${agree ? "rapproche" : "oppose"}</strong> · poids ${w.toFixed(2)}</div>
+      </li>`;
 
     const robBlock = isFiltered()
       ? `<p class="loading" style="margin:.4rem 0 0">Analyse de robustesse complète disponible sans filtre (elle est précalculée sur l'ensemble des votes).</p>`
@@ -217,22 +307,23 @@
       <div class="pair-head">
         <div><div class="kicker">Accord pondéré</div><div class="pair-score">${VV.fmtPct(stat.accord)}</div></div>
         <div class="pair-meta">
-          <div><strong>${selected.a}</strong> (${groupes.find((g) => g.sigle === selected.a).nom})</div>
-          <div><strong>${selected.b}</strong> (${groupes.find((g) => g.sigle === selected.b).nom})</div>
+          <div><strong>${VV.esc(selected.a)}</strong> (${VV.esc(groupes.find((g) => g.sigle === selected.a)?.nom ?? "")})</div>
+          <div><strong>${VV.esc(selected.b)}</strong> (${VV.esc(groupes.find((g) => g.sigle === selected.b)?.nom ?? "")})</div>
           <div>Kappa de Cohen (accord corrigé du hasard) : <strong>${kap === null ? "–" : kap.toFixed(3).replace(".", ",")}</strong></div>
         </div>
         <div style="flex:1"></div>
         <a href="#votes">Voir les votes ci-dessous ↓</a>
       </div>
+      <p class="note" style="margin:.6rem 0 0">${bilan}</p>
       ${robBlock}
       <h3 style="margin-top:1.2rem">Accord par thème</h3>
       <div class="table-scroll"><table class="data">
         <thead><tr><th>Thème</th><th class="num">Votes partagés</th><th class="num">Accord</th></tr></thead>
         <tbody>${themeRows.map((x) => `<tr><td>${VV.esc(x.theme)}</td><td class="num">${x.n}</td><td class="num">${VV.fmtPct(x.accord)}</td></tr>`).join("")}</tbody>
       </table></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-top:1.2rem">
-        <div><h3>Votes qui les rapprochent</h3><div class="table-scroll"><table class="data"><tbody>${convergences.map(voteRow).join("")}</tbody></table></div></div>
-        <div><h3>Votes qui les opposent</h3><div class="table-scroll"><table class="data"><tbody>${divergences.map(voteRow).join("")}</tbody></table></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--gap);margin-top:1.3rem">
+        <div><h3>Votes qui les rapprochent</h3><ul class="impact">${convergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>
+        <div><h3>Votes qui les opposent</h3><ul class="impact">${divergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>
       </div>`;
 
     renderVariants(key);
@@ -269,6 +360,8 @@
 
   function renderAll() {
     renderMatrix();
+    renderRefChips();
+    renderRanking();
     renderPair();
     showNeighbours(selected.a);
   }
@@ -282,6 +375,7 @@
   });
 
   renderAll();
+  renderGroups();
   renderMap();
 })().catch((err) => {
   document.getElementById("pair-panel").innerHTML = `<p class="erreur">Erreur de chargement : ${VV.esc(err.message)}</p>`;

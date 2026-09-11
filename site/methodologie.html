@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Méthodologie — Votes 2027</title>
   <meta name="description" content="Méthodologie complète, reproductible et auditable : sources, sélection des scrutins, pondérations, scores de proximité et tests de robustesse.">
   <link rel="stylesheet" href="assets/style.css">
@@ -11,7 +12,7 @@
 <a class="skip-link" href="#contenu">Aller au contenu</a>
 <header class="site">
   <div class="wrap">
-    <div class="site-top">
+    <div class="nav-shell">
       <a class="brand" href="index.html">Votes<span>2027</span></a>
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
@@ -263,8 +264,6 @@ python -m http.server 8000 --directory site</pre>
   </div>
 </footer>
 <script src="assets/app.js"></script>
-<script>
-  VV.loadRibbon().catch(() => {});
-</script>
+<script src="assets/methodologie.js"></script>
 </body>
 </html>

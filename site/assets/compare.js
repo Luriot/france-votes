@@ -78,7 +78,7 @@
         <span class="nom">${VV.esc(g.nom)}</span>
         <span class="swatch" style="background:${VV.safeColor(g.couleur)}"></span>
         <dl>
-          <dt>scrutins</dt><dd>${VV.fmtNum(determined.length)}</dd>
+          <dt>scrutins comptés</dt><dd>${VV.fmtNum(determined.length)}</dd>
           <dt>participation</dt><dd>${VV.fmtPct(participation)}</dd>
           <dt>plus proche</dt><dd>${VV.esc(top?.sigle ?? "–")} · ${VV.fmtPct(top?.accord)}</dd>
           <dt>plus distant</dt><dd>${VV.esc(low?.sigle ?? "–")} · ${VV.fmtPct(low?.accord)}</dd>
@@ -86,9 +86,13 @@
       </button>`;
     }).join("");
     grid.querySelectorAll(".group-card").forEach((btn) => btn.addEventListener("click", () => {
-      selected.a = btn.dataset.sigle;
-      if (selected.b === selected.a) selected.b = sigles.find((s) => s !== selected.a);
+      refGroup = btn.dataset.sigle;
+      selected.a = refGroup;
+      if (selected.b === refGroup) selected.b = sigles.find((s) => s !== refGroup);
       renderAll();
+      const title = document.getElementById("ranking-title");
+      title.setAttribute("tabindex", "-1");
+      title.focus({ preventScroll: true });
       document.getElementById("comparer").scrollIntoView({ behavior: "smooth", block: "start" });
     }));
   }
@@ -183,6 +187,7 @@
           btn.addEventListener("click", () => {
             selected.a = row.sigle;
             selected.b = col.sigle;
+            refGroup = row.sigle;
             renderAll();
           });
           td.append(btn);
@@ -217,12 +222,17 @@
         `<text x="${(sx(p.x) + 14).toFixed(1)}" y="${(sy(p.y) + 4).toFixed(1)}">${sigle}</text></g>`
       );
     }
-    parts.push(`<text x="${pad}" y="${h - 12}" style="font-size:11px;fill:var(--ink-faint)">Position calculée à partir des votes (MDS) — pas d'axe politique interprété</text>`);
     svg.innerHTML = parts.join("");
     svg.querySelectorAll(".pt").forEach((g) => {
-      g.addEventListener("click", () => showNeighbours(g.dataset.sigle));
+      const pick = () => {
+        refGroup = g.dataset.sigle;
+        selected.a = refGroup;
+        if (selected.b === refGroup) selected.b = sigles.find((s) => s !== refGroup);
+        renderAll();
+      };
+      g.addEventListener("click", pick);
       g.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") showNeighbours(g.dataset.sigle);
+        if (e.key === "Enter" || e.key === " ") pick();
       });
     });
   }
@@ -265,10 +275,12 @@
     }
     const themeRows = Object.entries(byTheme)
       .map(([theme, list]) => ({ theme, ...VV.pairStats(list, selected.a, selected.b) }))
-      .filter((x) => x.n >= 5)
+      .filter((x) => x.n >= 10 && x.accord !== null)
       .sort((x, y) => y.accord - x.accord);
 
-    const best = themeRows[0], worst = themeRows[themeRows.length - 1];
+    const solid = themeRows.filter((x) => x.n >= 20);
+    const robust = solid.length ? solid : themeRows;
+    const best = robust[0], worst = robust[robust.length - 1];
     const bilan = `${selected.a} et ${selected.b} ont voté de la même manière sur ${VV.fmtPct(stat.accord)} ` +
       `de leurs ${VV.fmtNum(stat.n)} votes partagés` +
       (best ? ` — point de convergence maximal sur « ${VV.esc(best.theme)} » (${VV.fmtPct(best.accord)})` : "") +
@@ -293,6 +305,13 @@
         <div class="verdict">${VV.stance(s.p[ia])} ${VV.stance(s.p[ib])} · <strong>${agree ? "rapproche" : "oppose"}</strong> · poids ${w.toFixed(2)}</div>
       </li>`;
 
+    const themeTable = (rows) => rows.length
+      ? `<div class="table-scroll"><table class="data">
+          <thead><tr><th>Thème</th><th class="num">Votes</th><th class="num">Accord</th></tr></thead>
+          <tbody>${rows.map((x) => `<tr><td>${VV.esc(x.theme)}</td><td class="num">${x.n}</td><td class="num">${VV.fmtPct(x.accord)}</td></tr>`).join("")}</tbody>
+        </table></div>`
+      : `<p class="loading">Pas assez de votes partagés par thème.</p>`;
+
     const robBlock = isFiltered()
       ? `<p class="loading" style="margin:.4rem 0 0">Analyse de robustesse complète disponible sans filtre (elle est précalculée sur l'ensemble des votes).</p>`
       : `
@@ -316,11 +335,18 @@
       </div>
       <p class="note" style="margin:.6rem 0 0">${bilan}</p>
       ${robBlock}
-      <h3 style="margin-top:1.2rem">Accord par thème</h3>
-      <div class="table-scroll"><table class="data">
-        <thead><tr><th>Thème</th><th class="num">Votes partagés</th><th class="num">Accord</th></tr></thead>
-        <tbody>${themeRows.map((x) => `<tr><td>${VV.esc(x.theme)}</td><td class="num">${x.n}</td><td class="num">${VV.fmtPct(x.accord)}</td></tr>`).join("")}</tbody>
-      </table></div>
+      <h3 style="margin-top:1.3rem">Accord par thème</h3>
+      <div class="theme-cols">
+        <div>
+          <p class="fineprint" style="margin-top:0">Où ils convergent le plus</p>
+          ${themeTable(themeRows.slice(0, 5))}
+        </div>
+        <div>
+          <p class="fineprint" style="margin-top:0">Où ils divergent le plus</p>
+          ${themeTable(themeRows.slice(-5).reverse())}
+        </div>
+      </div>
+      ${themeRows.length > 10 ? `<details class="aide"><summary>Voir les ${themeRows.length} thèmes détaillés</summary>${themeTable(themeRows)}</details>` : ""}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--gap);margin-top:1.3rem">
         <div><h3>Votes qui les rapprochent</h3><ul class="impact">${convergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>
         <div><h3>Votes qui les opposent</h3><ul class="impact">${divergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>

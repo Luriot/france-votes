@@ -6,24 +6,45 @@ const VV = (() => {
   const cache = {};
   let state = null;
 
+  const SPARK_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M12 0c1.05 7.02 4.93 10.95 12 12-7.07 1.05-10.95 4.98-12 12-1.05-7.02-4.93-10.95-12-12C7.07 10.95 10.95 7.02 12 0Z"/>' +
+    "</svg>";
+
   function initSignature() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     if (!reduce) {
+      // Étincelles au clic : 4 étoiles projetées à 3,5rem, jitter ±0,4 rad, 650 ms.
       document.addEventListener("click", (event) => {
-        for (let i = 0; i < 3; i += 1) {
+        for (let i = 0; i < 4; i += 1) {
           const spark = document.createElement("span");
           spark.className = "spark";
-          spark.textContent = "✳";
           spark.setAttribute("aria-hidden", "true");
-          const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
-          const distance = 20 + Math.random() * 26;
+          spark.innerHTML = SPARK_SVG;
           spark.style.left = `${event.clientX}px`;
           spark.style.top = `${event.clientY}px`;
-          spark.style.setProperty("--dx", `${(Math.cos(angle) * distance).toFixed(1)}px`);
-          spark.style.setProperty("--dy", `${(Math.sin(angle) * distance).toFixed(1)}px`);
-          spark.style.animationDelay = `${i * 45}ms`;
+          const angle = (i * Math.PI) / 2 - Math.PI / 2 + (Math.random() - 0.5) * 0.8;
+          const distance = 42;
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+          const rotation = (Math.random() - 0.5) * 300;
+          spark.animate(
+            [
+              { transform: "translate(-50%,-50%) translate(0,0) scale(0.2) rotate(0deg)", opacity: 0 },
+              {
+                transform: `translate(-50%,-50%) translate(${(dx * 0.4).toFixed(1)}px,${(dy * 0.4).toFixed(1)}px) scale(1) rotate(${(rotation * 0.4).toFixed(1)}deg)`,
+                opacity: 0.92,
+                offset: 0.4,
+              },
+              {
+                transform: `translate(-50%,-50%) translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(0.45) rotate(${rotation.toFixed(1)}deg)`,
+                opacity: 0,
+              },
+            ],
+            { duration: 650, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)", fill: "forwards" },
+          );
           document.body.append(spark);
-          spark.addEventListener("animationend", () => spark.remove(), { once: true });
+          window.setTimeout(() => spark.remove(), 720);
         }
       });
       let lastY = window.scrollY || 0;
@@ -85,7 +106,7 @@ const VV = (() => {
 
   function fmtDate(iso) {
     if (!iso) return "–";
-    const [y, m, d] = iso.split("-");
+    const [y, m, d] = String(iso).slice(0, 10).split("-");
     return `${d}/${m}/${y}`;
   }
 

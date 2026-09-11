@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Votes 2027 — comment votent les groupes à l'Assemblée</title>
   <meta name="description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=5">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -110,11 +110,13 @@
     <div class="block-head">
       <p class="eyebrow">Géographie des votes</p>
       <h2>Carte des proximités</h2>
-      <p>Positionnement calculé à partir des seuls votes (MDS sur les taux d'accord). Les axes n'ont pas de signification politique préétablie.</p>
+      <p>Chaque point est un groupe, placé selon ses accords avec tous les autres. Cliquez sur un point pour voir ses voisins.</p>
     </div>
     <div class="map-wrap">
       <svg class="map" id="map" viewBox="0 0 640 460" role="img" aria-label="Carte des proximités entre groupes"></svg>
       <div class="card" id="map-panel" aria-live="polite"></div>
+      <p class="fineprint map-caption">Position calculée à partir des votes (MDS sur les taux d'accord).
+      Les axes n'ont pas de signification politique préétablie ; seule la distance entre points compte.</p>
     </div>
   </section>
 
@@ -160,7 +162,7 @@
     </div>
   </div>
 </footer>
-<script src="assets/app.js"></script>
-<script src="assets/compare.js"></script>
+<script src="assets/app.js?v=5"></script>
+<script src="assets/compare.js?v=5"></script>
 </body>
 </html>

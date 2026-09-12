@@ -122,7 +122,8 @@
     link.href = url;
     link.download = `votes-2027-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
-    URL.revokeObjectURL(url);
+    // Révocation différée : certains navigateurs annulent le téléchargement si l'URL disparaît trop tôt.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   elCsv?.addEventListener("click", exportCsv);
 

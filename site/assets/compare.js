@@ -241,9 +241,13 @@
     const svg = document.getElementById("map");
     const pts = state.agreement.mds;
     const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
-    const pad = 40;
+    const compact = window.innerWidth < 700;
+    const pad = compact ? 36 : 40;
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const w = 640, h = 460;
+    const w = 640, h = compact ? 540 : 460;
+    const pointR = compact ? 15 : 11;
+    const labelOffset = compact ? 20 : 14;
+    const fontSize = compact ? 17 : 10;
     const sx = (x) => pad + ((x - minX) / Math.max(1e-9, maxX - minX)) * (w - 2 * pad);
     const sy = (y) => h - pad - ((y - minY) / Math.max(1e-9, maxY - minY)) * (h - 2 * pad);
     const parts = [
@@ -255,8 +259,9 @@
       const sigle = VV.esc(p.sigle);
       parts.push(
         `<g class="pt" data-sigle="${sigle}" role="button" tabindex="0" aria-label="Groupe ${sigle}">` +
-        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="11" fill="${VV.safeColor(meta?.couleur)}"></circle>` +
-        `<text x="${(sx(p.x) + 14).toFixed(1)}" y="${(sy(p.y) + 4).toFixed(1)}">${sigle}</text></g>`
+        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${compact ? 30 : 16}" fill="none" pointer-events="all"></circle>` +
+        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${pointR}" fill="${VV.safeColor(meta?.couleur)}"></circle>` +
+        `<text x="${(sx(p.x) + labelOffset).toFixed(1)}" y="${(sy(p.y) + fontSize / 3).toFixed(1)}" style="font-size:${fontSize}px">${sigle}</text></g>`
       );
     }
     svg.innerHTML = parts.join("");
@@ -273,6 +278,13 @@
       });
     });
   }
+
+  let mapWidth = window.innerWidth;
+  window.addEventListener("resize", () => {
+    if (Math.abs(window.innerWidth - mapWidth) < 80) return;
+    mapWidth = window.innerWidth;
+    renderMap();
+  });
 
   function showNeighbours(sigle) {
     const scrutins = filtered();
@@ -407,7 +419,7 @@
         </div>
       </div>
       ${themeRows.length > 10 ? `<details class="aide"><summary>Voir les ${themeRows.length} thèmes détaillés</summary>${themeTable(themeRows)}</details>` : ""}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--gap);margin-top:1.3rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px, 100%),1fr));gap:var(--gap);margin-top:1.3rem">
         <div><h3>Votes qui les rapprochent</h3><ul class="impact">${convergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>
         <div><h3>Votes qui les opposent</h3><ul class="impact">${divergences.map(voteItem).join("") || "<li>Aucun</li>"}</ul></div>
       </div>`;

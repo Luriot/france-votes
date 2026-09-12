@@ -273,7 +273,7 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--paper); borde
 .impact a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 .impact .verdict { font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.3rem; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
 
-.theme-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--gap); }
+.theme-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--gap); }
 .map-caption { grid-column: 1 / -1; margin: 0; }
 
 /* --- matrices de données --- */
@@ -409,4 +409,58 @@ footer.site .bottom { margin-top: var(--section); padding-top: 1.2rem; border-to
 .js .block.is-in, .js .hero > *.is-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .js .block, .js .hero > * { opacity: 1; transform: none; }
+}
+
+/* --- mobile & tactile --- */
+
+@media (max-width: 760px) {
+  /* Header statique sur téléphone : un bandeau collant de ~200 px mange l'écran. */
+  header.site { position: static; }
+  .nav-shell { gap: 0.2rem 0.9rem; }
+  /* Nav sur une seule ligne défilable : 4 liens ne tiennent pas sur 320 px. */
+  nav.site { flex-wrap: nowrap; overflow-x: auto; margin-left: 0; flex-basis: 100%; }
+  .ribbon { flex-wrap: nowrap; overflow-x: auto; }
+  .ribbon span { flex: none; white-space: nowrap; }
+  .nav-search { flex-basis: 100%; }
+  .nav-search input { width: 100%; min-width: 0; }
+  /* Les <select> ont une largeur intrinsèque = option la plus longue : on les contraint. */
+  .field { flex: 1 1 45%; min-width: 0; }
+  select { width: 100%; min-width: 0; }
+  /* Tout tableau de données (hors explorateur empilé) devient défilable horizontalement. */
+  table.data:not(.votes-table) { display: block; max-width: 100%; overflow-x: auto; }
+}
+
+/* L'explorateur passe en liste empilée : plus de tableau à faire défiler. */
+@media (max-width: 640px) {
+  .votes-table thead { display: none; }
+  .votes-table tr {
+    display: block; padding: 0.75rem 0.2rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+  .votes-table td { display: inline-block; border: 0; padding: 0.1rem 0.5rem 0.1rem 0; }
+  .votes-table td:nth-child(2) { display: block; }
+  .votes-table td:nth-child(3) { display: block; padding-top: 0.3rem; }
+}
+
+/* Cibles tactiles : ≥ 44 px et champs ≥ 16 px (sinon iOS zoome au focus). */
+@media (max-width: 760px), (pointer: coarse) {
+  nav.site a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 0.15rem; }
+  button, select, input[type="search"] { min-height: 44px; font-size: 16px; }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; }
+  .ref-chips button { min-height: 44px; }
+  .check { min-height: 44px; }
+  .q-actions button { min-height: 44px; }
+}
+
+/* Pas de survols collants au doigt. */
+@media (hover: none) {
+  button:hover { background: var(--chalk); border-color: color-mix(in srgb, var(--ink) 55%, transparent); transform: none; box-shadow: 3px 3px 0 rgba(23, 19, 16, 0.22); }
+  button:hover::after { transform: translateY(100%); }
+  button.primary:hover { background: var(--ink); }
+  button.ghost:hover { background: transparent; }
+  table.matrix button.cell:hover { outline: none; }
+  .rank-row:hover { background: transparent; }
+  .group-card:hover { outline: none; }
+  table.data tbody tr:hover td { background: transparent; }
+  .vote-title a:hover { text-decoration: none; }
 }

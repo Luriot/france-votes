@@ -3,7 +3,7 @@
 Même chaîne que BrunoFresh : GitHub Actions teste, construit une image, la pousse sur GHCR,
 Unraid la tire. Spécificité de france-votes : **le site est statique et les données officielles
 sont figées dans l'image au moment du build**. Rafraîchir les données = reconstruire l'image
-(c'est fait automatiquement chaque lundi, ou à la demande).
+(c'est fait automatiquement dès que l'AN/Sénat publie, ou à la demande).
 
 ---
 
@@ -12,15 +12,20 @@ sont figées dans l'image au moment du build**. Rafraîchir les données = recon
 À chaque **push sur `main`** (et sur demande) :
 
 1. **test** : lance le pipeline complet (`python pipeline/run_all.py` — télécharge les sources
-   AN/Sénat, construit la base, régénère les exports), puis les 50 tests, `check_site.mjs`
+   AN/Sénat, construit la base, régénère les exports), puis les 62 tests, `check_site.mjs`
    (cohérence JS/exports) et `html-validate`.
 2. **build-and-push** (jamais sur les pull requests) : construit l'image Docker (le pipeline
    tourne dans le build), scanne l'image avec **Trivy** (échec si CVE CRITICAL/HIGH corrigeable),
    puis pousse sur `ghcr.io`.
 
+Chaque nuit, un job **check-data** rejoue le pipeline sur les sources mises en cache et revalide
+les fichiers officiels par `ETag`/`If-None-Match` : si l'AN ou le Sénat n'a rien publié, aucun
+octet n'est retéléchargé et l'image n'est pas reconstruite (`changed=false`). Seule une
+publication déclenche le build et la poussée sur GHCR.
+
 Déclencheurs :
 - push sur `main` ;
-- **planification : chaque lundi 05:17 UTC** (rafraîchissement des données) ;
+- **planification : chaque nuit 05:17 UTC** (contrôle des sources, build seulement si publication) ;
 - `workflow_dispatch` manuel depuis l'onglet Actions (pour des données du jour).
 
 ---
@@ -60,8 +65,11 @@ Variante plugin **Compose** : `docker compose up -d` avec le `docker-compose.yml
   activer Watchtower pour ce conteneur.
 - **Données du jour** : onglet **Actions** → workflow `CI/CD` → **Run workflow** sur `main`,
   puis Force Update dans Unraid.
-- **Rythme garanti** : au moins un rebuild par semaine (cron du lundi). Les données des scrutins
-  évoluent au fil des séances ; il n'y a aucune écriture côté serveur.
+- **Fraîcheur** : contrôle automatique chaque nuit. Si l'AN ou le Sénat a publié, une image
+  fraîche est poussée sur GHCR le lendemain matin ; Watchtower la tire automatiquement. Sans
+  Watchtower, faire un **Force Update** de temps en temps. Il n'y a aucune écriture côté serveur.
+- **Vérifier la fraîcheur** : le ruban de couverture affiche « données AN au … » (date du dernier
+  scrutin publié) ; `data/derniere_execution.json` (pipeline local) trace le dernier contrôle.
 
 ---
 

@@ -13,7 +13,7 @@ applique des règles écrites, déterministes et testées. Aucun vote n'est choi
 ## Démarrage rapide
 
 ```powershell
-python pipeline/run_all.py          # télécharge, construit la base SQLite, calcule les scores
+python pipeline/run_all.py          # source modifiée ? revalide (ETag), reconstruit, sinon saute
 python -m unittest discover -s pipeline/tests
 node pipeline/check_site.mjs        # vérifie les données du site côté navigateur
 python -m http.server 8000 --directory site
@@ -27,12 +27,12 @@ nécessaire seulement pour le script de vérification facultatif.
 
 ```
 pipeline/
-  download.py    téléchargement des sources + empreintes (data/manifest.json)
+  download.py    téléchargement conditionnel des sources (ETag/If-None-Match) + empreintes
   build_db.py    parsing des flux, appariements dossier/thème, base SQLite
   score.py       pondérations, accords, kappa, robustesse, exports du site
-  run_all.py     les trois étapes d'affilée
+  run_all.py     les trois étapes d'affilée (saute 2-3 si les sources n'ont pas changé)
   check_site.mjs vérification du JS de site contre les exports
-  tests/         50 tests unitaires et d'intégration
+  tests/         62 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db
 site/            site statique (aucun framework, aucun build) + données JSON générées
   assets/        style, JS natif, icônes (icon-192, icon-512 « any maskable », apple-touch), og.png
@@ -40,8 +40,8 @@ site/            site statique (aucun framework, aucun build) + données JSON g�
 deploy/nginx.conf configuration nginx de production (CSP, gzip, cache, PWA)
 Dockerfile       image de prod : pipeline exécuté au build, nginx sert site/
 docker-compose.yml   test local / plugin Compose Unraid
-.github/workflows/main.yml   CI (pipeline + 50 tests + check_site + HTML), build GHCR,
-                             scan Trivy, rebuild planifié chaque lundi
+.github/workflows/main.yml   CI (pipeline + 62 tests + check_site + HTML), build GHCR,
+                             scan Trivy, contrôle quotidien des sources (build si publication)
 DEPLOYMENT.md    guide GitHub → GHCR → Unraid (DNS, HTTPS, mises à jour)
 ```
 
@@ -97,8 +97,9 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
 ## Déploiement
 
 Image Docker unique (`Dockerfile`) : le pipeline génère les données au build, nginx sert `site/`.
-CI/CD GitHub Actions → GHCR → Unraid, avec scan Trivy et rebuild planifié chaque lundi pour la
-fraîcheur des données. Guide complet : [`DEPLOYMENT.md`](DEPLOYMENT.md).
+CI/CD GitHub Actions → GHCR → Unraid, avec scan Trivy et contrôle quotidien des sources
+(revalidation ETag ; l'image n'est reconstruite que si l'AN ou le Sénat a publié). Guide complet :
+[`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ```bash
 docker build -t france-votes .          # ~3 min (télécharge les sources officielles)

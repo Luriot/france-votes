@@ -5,10 +5,11 @@ on:
     branches:
       - main
   pull_request:
-  # Rafraîchissement des données : l'image embarque les scrutins, on la reconstruit
-  # chaque lundi avec les dernières sources AN/Sénat.
+  # Contrôle quotidien des sources : le job `check-data` réutilise le cache des données
+  # et ne reconstruit/pousse l'image que si l'AN ou le Sénat a publié (revalidation
+  # ETag/Last-Modified, cf. pipeline/download.py). Le lundi n'est plus privilégié.
   schedule:
-    - cron: "17 5 * * 1"
+    - cron: "17 5 * * *"
   workflow_dispatch:
 
 env:
@@ -21,6 +22,7 @@ concurrency:
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -36,7 +38,7 @@ jobs:
       - name: Pipeline complet (sources officielles → base → exports)
         run: python pipeline/run_all.py
 
-      - name: Tests (50)
+      - name: Tests
         run: python -m unittest discover -s pipeline/tests
 
       - name: Cohérence JS du site / exports
@@ -45,10 +47,52 @@ jobs:
       - name: Validation HTML
         run: npx --yes html-validate@9 site/index.html site/votes.html site/questionnaire.html site/methodologie.html
 
+  # Uniquement sur le cron quotidien : rejoue le pipeline sur les données en cache.
+  # La sortie `changed` décide si l'image doit être reconstruite.
+  check-data:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.pipeline.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Restaurer les sources précédentes
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data
+            site/data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Vérifier les sources et reconstruire si nécessaire
+        id: pipeline
+        run: |
+          python pipeline/run_all.py
+          echo "changed=$(jq -r .changed data/derniere_execution.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Sauvegarder les sources
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data
+            site/data
+          key: data-${{ github.run_id }}
+
   build-and-push:
-    needs: [test]
+    needs: [test, check-data]
     # Jamais sur PR ; un dispatch manuel depuis une branche ne doit pas écraser `latest`.
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    # Sur le cron : uniquement si `check-data` a détecté une publication.
+    if: |
+      always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' &&
+      (needs.test.result == 'success' || needs.check-data.result == 'success') &&
+      (github.event_name != 'schedule' || needs.check-data.outputs.changed == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read

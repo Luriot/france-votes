@@ -2,10 +2,12 @@
 
 ## Commandes
 
-- `python pipeline/run_all.py` — pipeline complet : télécharge (skip si présent, `--force` pour
-  retélécharger), construit `data/france-votes.db`, calcule scores/robustesse et régénère
-  `site/data/*.json` (~2 min).
-- `python -m unittest discover -s pipeline/tests` — 50 tests ; nécessitent la base et les exports.
+- `python pipeline/run_all.py` — pipeline complet : revalide les sources (ETag/Last-Modified,
+  retéléchargées seulement si l'AN/Sénat a publié ; `--force` pour tout retélécharger et
+  reconstruire), construit `data/france-votes.db`, calcule scores/robustesse et régénère
+  `site/data/*.json` (~2 min ; saute les étapes 2-3 si rien n'a changé) ; écrit
+  `data/derniere_execution.json` (gitignoré).
+- `python -m unittest discover -s pipeline/tests` — 62 tests ; nécessitent la base et les exports.
 - `node pipeline/check_site.mjs` — vérifie le JS contre les exports (66/66 accords, kappa,
   `?v=N` identique sur les 4 pages, clés lues par le questionnaire) ; à lancer après toute
   modification de `score.py` ou de `site/assets/*.js`.

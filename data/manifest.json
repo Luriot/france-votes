@@ -7,9 +7,11 @@
       "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip",
       "page": "https://data.assemblee-nationale.fr/travaux-parlementaires/votes",
       "bytes": 26317479,
-      "md5": "755e8e7e46074ee65ce62ac322c90766",
-      "sha256": "9123be3af253805ef8d16b88bb3bf4d29ac6692910b21fc53ac44c39238667a2",
-      "retrieved_at": "2026-09-12T09:01:17+00:00"
+      "md5": "7c12ed01dbdecfcbbaf04d1c24d07b9a",
+      "sha256": "6056d112b1d0ce72cf4373fd0f9499b21e64c10304fc12a67a2e48ed45831843",
+      "etag": "\"19192a7-65b469f1bd71f\"",
+      "last_modified": "Sat, 12 Sep 2026 10:25:35 GMT",
+      "retrieved_at": "2026-09-12T16:31:29+00:00"
     },
     {
       "name": "Dossiers législatifs (AN)",
@@ -17,9 +19,11 @@
       "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip",
       "page": "https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs",
       "bytes": 10307987,
-      "md5": "adb398e7ada43aeaf8d01bee4685616e",
-      "sha256": "80167a1ed09942f01811ed018474b6a11590491249d0426b84c227817599701d",
-      "retrieved_at": "2026-09-12T09:02:44+00:00"
+      "md5": "095928aae3f6af67fa48b459936948af",
+      "sha256": "7d807d3a8bcdd43d0dfb7bc4bb6c4135dd24b7c0bd9c9c2e77a0d7cb5d98c302",
+      "etag": "\"9d4993-65b490222e9a2\"",
+      "last_modified": "Sat, 12 Sep 2026 13:16:26 GMT",
+      "retrieved_at": "2026-09-12T16:32:14+00:00"
     },
     {
       "name": "Dossiers législatifs et thèmes (Sénat, base Dosleg)",
@@ -29,7 +33,9 @@
       "bytes": 3622719,
       "md5": "ec34dc618b18a0a3cbc9bae3f04aa085",
       "sha256": "618d58359c97df086a45b43e5782c97954b6c8a44999119abd43399cc7c4304f",
-      "retrieved_at": "2026-09-12T09:02:46+00:00"
+      "retrieved_at": "2026-09-12T09:02:46+00:00",
+      "etag": "\"2883-37473f-65b3f46228a80\"",
+      "last_modified": "Sat, 12 Sep 2026 01:39:38 GMT"
     }
   ]
 }

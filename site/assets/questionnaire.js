@@ -23,10 +23,17 @@
   const params = new URLSearchParams(location.search);
   const requested = params.get("affiner");
   let focusFamily = requested && families.some((fam) => fam.id === requested) ? requested : null;
+  const sharedCode = params.get("r");
+  let sharedView = Boolean(sharedCode);
+  if (sharedCode) {
+    for (const [key, value] of VV.decodeAnswers(sharedCode, families)) answers.set(key, value);
+  }
+  document.body.classList.toggle("share-view", sharedView);
 
   const container = document.getElementById("questions");
   const box = document.getElementById("resultats");
   const progress = document.getElementById("progress");
+  let lastTop = [];
 
   const POSITION_LABEL = { 1: "Pour", 0: "Abstention", "-1": "Contre" };
   const familyAnswer = (fam) => answers.get(`f:${fam.id}`);
@@ -47,6 +54,13 @@
     focusFamily = familyId;
     history.replaceState(null, "", familyId ? `${location.pathname}?affiner=${encodeURIComponent(familyId)}` : location.pathname);
     render();
+  }
+
+  function exitShareView() {
+    sharedView = false;
+    document.body.classList.remove("share-view");
+    history.replaceState(null, "", location.pathname);
+    updateResults();
   }
 
   /* --- rendu --- */
@@ -217,12 +231,14 @@
       .slice(0, 5);
 
     box.innerHTML = `
+      ${sharedView ? `<p class="fineprint" id="shared-note">Résultat partagé · <button type="button" class="ghost" id="exit-share">répondre à mon tour</button></p>` : ""}
       <h2>Groupes dont les votes ressemblent le plus à vos réponses</h2>
       <p style="font-size:.85rem;color:var(--ink-soft)">Ceci n'est pas une consigne de vote. Le calcul compare vos réponses (${answeredFamilies} texte${answeredFamilies > 1 ? "s" : ""}) aux positions des groupes, sur ${answered.length} vote${answered.length > 1 ? "s" : ""} pris en compte.</p>
       ${perGroup.map((g) => `<div class="result-row">
         <span class="stance" style="border-color:${VV.safeColor(g.couleur)};color:var(--ink)">${VV.esc(g.sigle)}</span>
         <span class="bar"><i style="width:${(g.accord * 100).toFixed(1)}%;background:${VV.safeColor(g.couleur)}"></i></span>
         <b>${VV.fmtPct(g.accord)}</b></div>`).join("")}
+      <p class="q-actions"><button type="button" class="primary" id="partager">Partager ce résultat</button></p>
       <details class="aide"><summary>Pourquoi ${VV.esc(best.sigle)} arrive en tête ? (votes qui ont le plus pesé)</summary>
         <h3>Votes où vous êtes d'accord avec ${VV.esc(best.sigle)}</h3>
         <ul>${topDrivers(true).map((d) => `<li>${VV.esc(d.label)} <span class="date">(poids ${d.w.toFixed(2)})</span></li>`).join("") || "<li>Aucun</li>"}</ul>
@@ -230,6 +246,7 @@
         <ul>${topDrivers(false).map((d) => `<li>${VV.esc(d.label)} <span class="date">(poids ${d.w.toFixed(2)})</span></li>`).join("") || "<li>Aucun</li>"}</ul>
       </details>
       <p style="font-size:.8rem;color:var(--ink-faint)">Chaque question pèse autant qu'une autre : une réponse est répartie entre les votes de son texte selon le thème (plafond de 15 % sur le poids de base) et la participation du groupe. La déduplication du corpus ne s'applique pas ici.</p>`;
+    lastTop = perGroup.slice(0, 3).map((g) => `${g.sigle} ${VV.fmtPct(g.accord)}`);
   }
 
   /* --- interactions --- */
@@ -258,6 +275,26 @@
     }
     save();
     render();
+  });
+
+  box.addEventListener("click", async (event) => {
+    if (event.target.closest("#exit-share")) {
+      exitShareView();
+      return;
+    }
+    const button = event.target.closest("#partager");
+    if (!button) return;
+    const code = VV.encodeAnswers(answers, families);
+    const url = `${location.origin}${location.pathname}?r=${code}`;
+    const status = await VV.share({
+      title: "Votes 2027 — mon résultat",
+      text: `Mon résultat sur Votes 2027 : ${lastTop.join(" · ")}.`,
+      url,
+    });
+    if (status === "copied") {
+      button.textContent = "Lien copié ✓";
+      setTimeout(() => { button.textContent = "Partager ce résultat"; }, 2000);
+    }
   });
 
   function render() {

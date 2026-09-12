@@ -372,6 +372,14 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 .vote-list .date { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
 .affiner { margin-top: 0.55rem; }
 .q-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.6rem; }
+
+/* Mode capture d'écran (lien de résultat partagé) : ne garde que l'essentiel. */
+.share-view header.site .ribbon { display: none; }
+.share-view #questions, .share-view details.aide, .share-view footer.site,
+.share-view main > p:not(#progress) { display: none; }
+.share-view main { padding-top: 1rem; }
+.share-view #resultats { border-color: var(--ink); }
+.share-view h1 { font-size: clamp(1.6rem, 6vw, 2.4rem); }
 .result-row { display: grid; grid-template-columns: 4.6rem 1fr 4.6rem; gap: 0.7rem; align-items: center; margin-bottom: 0.4rem; }
 .result-row .bar { height: 0.9rem; border-radius: 100vw; background: var(--inset); overflow: hidden; }
 .result-row .bar i { display: block; height: 100%; background: var(--accent); }

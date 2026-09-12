@@ -98,6 +98,20 @@ const withAbst = VV.pairStats(VV.state.scrutins, "RN", "LFI-NFP");
 const noAbst = VV.pairStats(VV.state.scrutins, "RN", "LFI-NFP", { excludeAbstention: true });
 check("exclusion des abstentions recalcule", noAbst.n <= withAbst.n && typeof noAbst.accord === "number");
 
+// Partage : encodage compact des réponses dans l'URL (index de famille + position).
+const fakeFamilies = [{ id: "dlr:A" }, { id: "dlr:B" }, { id: "dlr:C" }];
+const shareCode = VV.encodeAnswers(new Map([["f:dlr:A", 1], ["f:dlr:C", -1], ["u:x", 1]]), fakeFamilies);
+check("encodage des réponses (familles seulement, index base36)", shareCode === "0p,2c", shareCode);
+const shareDecoded = VV.decodeAnswers(shareCode, fakeFamilies);
+check("décodage des réponses", shareDecoded.size === 2 && shareDecoded.get("f:dlr:A") === 1 && shareDecoded.get("f:dlr:C") === -1);
+check("décodage robuste aux paramètres invalides", VV.decodeAnswers("9z,%,", fakeFamilies).size === 0);
+const realFamilies = q.families;
+const realSample = new Map([[`f:${realFamilies[0].id}`, 1], [`f:${realFamilies[realFamilies.length - 1].id}`, 0]]);
+const realRound = VV.decodeAnswers(VV.encodeAnswers(realSample, realFamilies), realFamilies);
+check("aller-retour sur les familles exportées",
+  realRound.size === 2 && realRound.get(`f:${realFamilies[0].id}`) === 1
+  && realRound.get(`f:${realFamilies[realFamilies.length - 1].id}`) === 0);
+
 // Sécurité du rendu : les données dynamiques doivent être neutralisées avant injection dans le DOM.
 const escaped = VV.esc('<img src=x onerror=alert(1)> "quotes" &');
 check("esc neutralise les balises", !escaped.includes("<img") && escaped.includes("&lt;img"));

@@ -175,6 +175,50 @@ const VV = (() => {
     return order.indexOf(a) < order.indexOf(b) ? `${a}|${b}` : `${b}|${a}`;
   }
 
+  // Réponses du questionnaire dans l'URL : « 0p,2c,12a » (index base36 de la famille + position).
+  function encodeAnswers(answers, families) {
+    const index = new Map(families.map((fam, i) => [fam.id, i]));
+    const parts = [];
+    for (const [key, value] of answers) {
+      if (!key.startsWith("f:")) continue;
+      const position = index.get(key.slice(2));
+      if (position === undefined) continue;
+      parts.push(`${position.toString(36)}${value === 1 ? "p" : value === 0 ? "a" : "c"}`);
+    }
+    return parts.sort().join(",");
+  }
+
+  function decodeAnswers(code, families) {
+    const out = new Map();
+    for (const part of String(code || "").split(",")) {
+      const match = /^([0-9a-z]+)([pac])$/.exec(part);
+      if (!match) continue;
+      const family = families[parseInt(match[1], 36)];
+      if (!family) continue;
+      out.set(`f:${family.id}`, match[2] === "p" ? 1 : match[2] === "a" ? 0 : -1);
+    }
+    return out;
+  }
+
+  // Partage natif (smartphone) avec repli copie de lien puis saisie manuelle.
+  async function share({ title, text, url }) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return "shared";
+      } catch (err) {
+        if (err && err.name === "AbortError") return "cancelled";
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      return "copied";
+    } catch {
+      window.prompt("Copiez le lien :", url);
+      return "prompt";
+    }
+  }
+
   function heatColor(value) {
     if (value === null || value === undefined) return "#eee4cd";
     const t = Math.max(0, Math.min(1, (value - 0.2) / 0.7));
@@ -243,6 +287,7 @@ const VV = (() => {
     loadJSON, loadAll, loadRibbon, get state() { return state; },
     fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, kappa, heatColor, textOn,
     stance, esc, safeColor, period, setText, renderRibbon, initSignature,
+    encodeAnswers, decodeAnswers, share,
   };
 })();
 

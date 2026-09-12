@@ -386,6 +386,7 @@
           <div>Kappa de Cohen (accord corrigé du hasard) : <strong>${kap === null ? "–" : kap.toFixed(3).replace(".", ",")}</strong></div>
         </div>
         <div style="flex:1"></div>
+        <button type="button" class="ghost" id="partager-paire">Partager</button>
         <a href="#votes">Voir les votes ci-dessous ↓</a>
       </div>
       <p class="note" style="margin:.6rem 0 0">${bilan}</p>
@@ -409,6 +410,25 @@
       </div>`;
 
     renderVariants(key);
+
+    box.querySelector("#partager-paire")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const morceaux = [
+        `${selected.a} ↔ ${selected.b} : ${VV.fmtPct(stat.accord)} d'accord sur ${VV.fmtNum(stat.n)} votes partagés`,
+        `kappa ${kap === null ? "–" : kap.toFixed(2)}`,
+      ];
+      if (best) morceaux.push(`convergence max « ${best.theme} » (${VV.fmtPct(best.accord)})`);
+      if (worst && worst !== best) morceaux.push(`désaccord max « ${worst.theme} » (${VV.fmtPct(worst.accord)})`);
+      const status = await VV.share({
+        title: "Votes 2027 — comparaison de groupes",
+        text: `Votes 2027 — ${morceaux.join(" · ")}.`,
+        url: location.href,
+      });
+      if (status === "copied") {
+        button.textContent = "Lien copié ✓";
+        setTimeout(() => { button.textContent = "Partager"; }, 2000);
+      }
+    });
   }
 
   function renderVariants(key) {

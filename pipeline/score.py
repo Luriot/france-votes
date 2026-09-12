@@ -443,7 +443,9 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
             continue
         title = (s["titre"] or "").replace("\u2019", "'")
         if title.lower().startswith("la motion de censure"):
-            recoded = ["pour" if p == "pour" else "contre" for p in s["positions"].values()]
+            # Recodage dans l'ordre canonique SIGLES (l'ordre SQL n'est pas garanti) :
+            # seul « pour » reste pour, tout le reste devient « ne soutient pas » (-1).
+            recoded = ["pour" if s["positions"].get(sigle) == "pour" else "contre" for sigle in SIGLES]
             if len(set(recoded)) == 1:
                 continue
             family_id = f"moc:{s['uid']}"
@@ -451,6 +453,7 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
                 "id": family_id, "theme": "Motions de censure", "kind": "motion de censure",
                 "label": f"Faut-il censurer le gouvernement ? (motion du {s['date']})",
                 "dates": [s["date"]],
+                "anchor": s["uid"],
                 "votes": [{"u": s["uid"], "n": s["numero"], "d": s["date"], "dir": 1,
                            "p": [POS_CODE[value] for value in recoded]}],
                 "entropies": [_entropy(recoded)],
@@ -479,8 +482,12 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
         if len(determined) < 8 or len(set(determined)) == 1 or anchor["theme"] == UNCLASSIFIED:
             continue
         votes, vectors = [], set()
-        for s in members:
-            direction = orientation(s, anchor["positions"])
+        # L'ancre (vote de passage) est examinée en premier et toujours orientée +1 : elle est la
+        # référence de la famille et ne doit jamais être neutralisée (doublon) ni écartée
+        # (corrélation avec elle-même < 0,5 si le vote est très abstentionniste).
+        ordered = [anchor] + [member for member in members if member["uid"] != anchor["uid"]]
+        for s in ordered:
+            direction = 1 if s["uid"] == anchor["uid"] else orientation(s, anchor["positions"])
             if direction is None:
                 continue
             vector = tuple(s["positions"].get(sigle) for sigle in SIGLES)
@@ -495,6 +502,7 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
         families[key] = {
             "id": key, "theme": anchor["theme"], "kind": kind, "label": statement(kind, name),
             "dates": sorted({vote["d"] for vote in votes}),
+            "anchor": anchor["uid"],
             "votes": sorted(votes, key=lambda vote: (vote["d"], vote["n"])),
             "entropies": entropies,
         }
@@ -622,7 +630,9 @@ def main() -> int:
     }
     for name, payload in exports.items():
         path = SITE_DATA / name
-        path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        tmp = path.with_suffix(path.suffix + ".part")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        tmp.replace(path)
         print(f"[ok] {path.relative_to(ROOT)} ({path.stat().st_size} octets)")
 
     accords = [(v["accord"], k) for k, v in primary.items() if v["accord"] is not None]

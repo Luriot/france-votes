@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=20">
+  <link rel="stylesheet" href="assets/style.css?v=22">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -206,6 +206,14 @@
     éloignée ECOS–UDR (21,6 %) ; le kappa médian des 66 paires est faible (0,12), signe que
     beaucoup de scrutins sont soit peu partagés, soit très prévisibles — d'où l'importance de
     regarder la robustesse en plus du chiffre brut.</p>
+    <p><strong>Périmètres.</strong> Le comparateur propose trois lectures : <em>tous les votes</em>
+    (règle principale ci-dessus) ; les <em>questions essentielles</em> — les 54 textes du
+    questionnaire, chaque vote ramené sur l'axe « pour/contre l'adoption du texte », la
+    déduplication ne s'y appliquant pas ; et le <em>vote de passage</em> de chaque texte, seule
+    position directement interprétable. Le passage à un périmètre orienté peut faire
+    <em>baisser</em> les accords affichés : deux groupes qui votaient « contre » le même
+    amendement pour des raisons opposées apparaissent désormais opposés. Robustesse et variantes
+    sont précalculées sur le corpus complet : elles ne s'affichent qu'en mode « tous les votes ».</p>
   </section>
 
   <section class="block" id="robustesse">
@@ -253,6 +261,17 @@
       invisibles par nature.</li>
       <li>Neutralité ne veut pas dire vérité objective : le site minimise les choix éditoriaux et
       affiche ses conventions, il ne prétend pas produire un verdict.</li>
+      <li><strong>Orientation des votes (périmètre essentiel)</strong> : le sens d'un amendement est
+      une <em>inférence collective</em> (corrélation avec le vote de passage, |r| ≥ 0,5) — pas une
+      intention. Voter contre un amendement ne signifie pas nécessairement être contre le texte ou
+      le thème sous-jacent : rédaction, méthode ou tactique peuvent motiver le vote. 74 % des votes
+      du corpus essentiel sont des amendements ; seul le vote de passage est directement
+      interprétable.</li>
+      <li>L'<strong>indicateur de divergence</strong> de la matrice (pastille cerclée) signale un
+      groupe dont la position majoritaire sur les votes orientés diffère de son vote de passage :
+      il rend l'ambiguïté méthode/fond visible, il ne la supprime pas.</li>
+      <li>Pour une motion de censure, « ne soutient pas » est une <strong>convention</strong>
+      d'encodage (l'Assemblée ne recense que les votes favorables), pas une intention de vote.</li>
     </ul>
   </section>
 
@@ -284,6 +303,11 @@
     possible pour les 25 votes les plus significatifs d'un texte ; les autres comptent via la
     réponse donnée sur le texte. Le résultat n'est pas une consigne de vote : c'est la liste des
     groupes dont les votes passés ressemblent le plus à vos réponses.</p>
+    <p>Chaque famille exporte son <strong>ancre</strong> : l'identifiant du vote de passage qui a
+    servi à orienter ses votes. Le comparateur réutilise cette couche : la position sur le vote de
+    passage (lecture directe, sans inférence) et, pour la matrice des textes essentiels, la position
+    majoritaire pondérée par la participation sur l'ensemble des votes orientés de la famille
+    (égalité → 0, affiché « partagée (égalité) » ; aucune contribution → indéterminé).</p>
     <p>Le résultat est <strong>partageable</strong> : le bouton « Partager » donne un résumé
     condensé et un lien qui rejoue vos réponses (paramètre <code>?r=</code>, index de question +
     position, aucune donnée personnelle) ; la page ouverte par ce lien est allégée pour une capture
@@ -301,7 +325,9 @@ python -m http.server 8000 --directory site</pre>
     <code>data/manifest.json</code>. Aucune donnée n'est saisie à la main. Chaque source est
     revalidée par <code>ETag</code>/<code>Last-Modified</code> avant tout nouveau téléchargement :
     sans publication de l'Assemblée ou du Sénat, rien n'est retéléchargé et la base n'est pas
-    reconstruite ; le manifeste garde la trace de chaque récupération (empreinte, date).</p>
+    reconstruite ; le manifeste garde la trace de chaque récupération (empreinte, date). Une
+    empreinte du code du pipeline est enregistrée à chaque exécution : modifier les règles force la
+    reconstruction même si les sources n'ont pas bougé.</p>
   </section>
 </main>
 
@@ -311,7 +337,7 @@ python -m http.server 8000 --directory site</pre>
     (<code>pipeline/</code>) ; sources, volumes et limites détaillés dans le README du dépôt.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=20"></script>
-<script src="assets/methodologie.js?v=20"></script>
+<script src="assets/app.js?v=22"></script>
+<script src="assets/methodologie.js?v=22"></script>
 </body>
 </html>

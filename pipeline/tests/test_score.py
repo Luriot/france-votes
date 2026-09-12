@@ -257,6 +257,7 @@ class TestFamillesEssentielles(unittest.TestCase):
         famille = next(f for f in familles if f["id"] == "dlr:DLR1")
         votes = {vote["u"]: vote["dir"] for vote in famille["votes"]}
         self.assertEqual(votes, {"A1": 1, "A2": 1, "A3": -1})
+        self.assertEqual(famille["anchor"], "A1", "l'ancre est le vote de passage du texte")
         self.assertEqual(len(familles), 1, "un dossier sans vote de passage ne donne pas de question essentielle")
 
     def test_familles_et_plafond(self):
@@ -288,6 +289,45 @@ class TestFamillesEssentielles(unittest.TestCase):
         self.assertNotIn("titre:projet de loi g", ids, "scrutin indisponible exclu")
         self.assertEqual(len(familles), 3, "plafond de 3 familles pour le thème Budget")
 
+    def test_ancre_jamais_neutralisee(self):
+        base = {sigle: ("pour" if i < 6 else "contre") for i, sigle in enumerate(score.SIGLES)}
+        avant = self._ensemble("B1", 1, "2025-01-01", "l'amendement n° 1 au projet de loi Test.",
+                               positions=base, dossier="DLR2")
+        passage = self._ensemble("B2", 2, "2025-01-02", "l'ensemble du projet de loi Test (première lecture).",
+                                 positions=base, dossier="DLR2")
+        familles = score.questionnaire_families([avant, passage])
+        famille = next(f for f in familles if f["id"] == "dlr:DLR2")
+        self.assertEqual(famille["anchor"], "B2")
+        self.assertIn("B2", [vote["u"] for vote in famille["votes"]],
+                      "l'ancre reste dans la famille même si un vote antérieur a le même vecteur")
+
+    def test_ancre_conservee_meme_si_correlation_faible(self):
+        # Un vote de passage très abstentionniste : sa corrélation avec lui-même tombe sous 0,5.
+        positions = {sigle: ("abstention" if i < 7 else "pour" if i < 10 else "contre")
+                     for i, sigle in enumerate(score.SIGLES)}
+        passage = self._ensemble("C1", 1, "2025-01-01",
+                                 "l'ensemble du projet de loi Test (première lecture).",
+                                 positions=positions, dossier="DLR3")
+        familles = score.questionnaire_families([passage])
+        famille = next(f for f in familles if f["id"] == "dlr:DLR3")
+        votes = {vote["u"]: vote["dir"] for vote in famille["votes"]}
+        self.assertEqual(votes.get("C1"), 1,
+                         "l'ancre reste, orientée +1, même si le vote est très abstentionniste")
+        self.assertEqual(famille["anchor"], "C1")
+
+    def test_motion_de_censure_ordre_canonique(self):
+        # L'ordre des positions issues de la base n'est pas garanti : le recodage suit SIGLES.
+        positions = {sigle: ("pour" if i % 2 == 0 else "non_votant")
+                     for i, sigle in enumerate(reversed(score.SIGLES))}
+        moc = self._ensemble("M2", 30, "2025-10-20",
+                             "la motion de censure déposée en application de l'article 49, alinéa 2, "
+                             "de la Constitution par Mme X et 58 députés.",
+                             theme="Non classé", positions=positions)
+        famille = score.questionnaire_families([moc])[0]
+        attendu = [1 if positions[sigle] == "pour" else -1 for sigle in score.SIGLES]
+        self.assertEqual(famille["votes"][0]["p"], attendu,
+                         "le recodage d'une motion doit être aligné sur l'ordre canonique des groupes")
+
     def test_motions_de_censure(self):
         # Seuls les votes favorables sont recensés par l'AN : les groupes absents sont encodés
         # « ne soutient pas » (p = -1) pour que la question soit comptable.
@@ -302,6 +342,7 @@ class TestFamillesEssentielles(unittest.TestCase):
         self.assertEqual(famille["id"], "moc:M1")
         self.assertEqual(famille["theme"], "Motions de censure")
         self.assertIn("censurer", famille["label"])
+        self.assertEqual(famille["anchor"], "M1", "l'ancre d'une motion de censure est la motion elle-même")
         codes = famille["votes"][0]["p"]
         self.assertEqual(len(codes), len(score.SIGLES))
         self.assertEqual(sorted(set(codes)), [-1, 1])

@@ -126,6 +126,51 @@ const chipHtml = VV.positionChips({ p: [1, -1, 0, null, 1, 1, 1, 1, 1, 1, 1, 1] 
 check("pastilles de position : 12 groupes, classes colorées",
   (chipHtml.match(/pos-chip/g) || []).length === 12
   && chipHtml.includes("pos-contre") && chipHtml.includes("pos-absent"));
+const chipDiverge = VV.positionChip(1, 'RN "x"', true);
+check("positionChip : classe divergente et titre échappé",
+  chipDiverge.includes("pos-pour") && chipDiverge.includes("diverge") && chipDiverge.includes("&quot;"));
+const chipNull = VV.positionChip(null, "vide");
+check("positionChip : position indéterminée sans divergence",
+  chipNull.includes("pos-absent") && !chipNull.includes("diverge"));
+const emptyBadge = VV.essentielBadge(null);
+const escapedBadge = VV.essentielBadge({ id: 'a"b' });
+check("essentielBadge : lien échappé et vide sans famille",
+  emptyBadge === "" && VV.essentielBadge(undefined) === ""
+  && escapedBadge.includes("questionnaire.html?affiner=a%22b"));
+
+// Positions sur les questions essentielles (localité 12×54 du comparateur).
+const stanceCodes = new Set([1, 0, -1, null]);
+const famStances = q.families.map((f) => VV.familyStances(f, scrutinsByUid));
+check("familles : ancre présente dans les votes", q.families.every((f) => f.votes.some((v) => v.u === f.anchor)));
+check("familles : position de passage sur 12 groupes, codes valides",
+  famStances.every((s) => s.passage.length === 12 && s.passage.every((p) => stanceCodes.has(p))));
+check("motions de censure : position de passage ±1",
+  q.families.filter((f) => f.kind === "motion de censure")
+    .every((f) => VV.familyStances(f, scrutinsByUid).passage.every((p) => p === 1 || p === -1)));
+check("motions : recodage aligné sur les positions canoniques",
+  q.families.filter((f) => f.kind === "motion de censure").every((f) => {
+    const s = scrutinsByUid.get(f.anchor);
+    return f.votes[0].p.every((v, i) => (s.p[i] === 1 ? v === 1 : v === -1));
+  }));
+const stanceDivergences = famStances.reduce((n, s) => n + s.divergences.filter(Boolean).length, 0);
+console.log(`INFO positions essentielles : ${stanceDivergences} divergence(s) passage/majorité sur ${q.families.length} familles`);
+
+// familyStances : égalité, contribution nulle, ancre hors votes (cas dégradés).
+const fakeScrutins = new Map([
+  ["V1", { u: "V1", p: [1, 1, null, ...new Array(9).fill(null)], q: new Array(12).fill(1) }],
+  ["V2", { u: "V2", p: [-1, 1, null, ...new Array(9).fill(null)], q: new Array(12).fill(1) }],
+]);
+const fakeFamily = { id: "test", anchor: "V1", votes: [{ u: "V1", dir: 1 }, { u: "V2", dir: 1 }] };
+const fakeStances = VV.familyStances(fakeFamily, fakeScrutins);
+check("familyStances : égalité pour/contre → 0 (partagée)",
+  fakeStances.majorite[0] === 0 && fakeStances.partagee[0] === true);
+check("familyStances : majorité simple et aucune contribution",
+  fakeStances.majorite[1] === 1 && fakeStances.partagee[1] === false && fakeStances.majorite[2] === null);
+const ghostStances = VV.familyStances({ id: "ghost", anchor: "V1", votes: [{ u: "V2", dir: 1 }] }, fakeScrutins);
+check("familyStances : ancre hors votes → position lue dans scrutins.json", ghostStances.passage[0] === 1);
+const emptyStances = VV.familyStances({ id: "vide", anchor: "ZZ", votes: [] }, new Map());
+check("familyStances : famille vide → aucun exception, tout indéterminé",
+  emptyStances.passage.every((p) => p === null) && emptyStances.majorite.every((p) => p === null));
 
 // Garde-fous de contrat : les pages consomment les clés réellement exportées…
 const questionnaireSrc = await readFile(new URL("../site/assets/questionnaire.js", import.meta.url), "utf8");

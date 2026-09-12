@@ -255,14 +255,69 @@ const VV = (() => {
     return `${s.d.slice(0, 4)}-${Number(s.d.slice(5, 7)) <= 6 ? "H1" : "H2"}`;
   }
 
-  // Pastilles de position des 12 groupes (vert pour, rouge contre, ocre abstention, gris n.d.).
+  function positionLabel(position) {
+    return position === 1 ? "pour" : position === -1 ? "contre"
+      : position === 0 ? "abstention" : "position non déterminée";
+  }
+
+  // Une pastille de position — unique implémentation (explorateur, derniers votes, matrice).
+  function positionChip(position, title, diverge = false) {
+    const cls = position === 1 ? "pos-pour" : position === -1 ? "pos-contre"
+      : position === 0 ? "pos-abstention" : "pos-absent";
+    return `<span class="pos-chip ${cls}${diverge ? " diverge" : ""}" title="${esc(title)}"></span>`;
+  }
+
+  // Pastilles des 12 groupes (position de chaque groupe), en une ligne.
   function positionChips(s) {
-    return state.meta.groupes.map((g, i) => {
-      const p = s.p[i];
-      const cls = p === 1 ? "pos-pour" : p === -1 ? "pos-contre" : p === 0 ? "pos-abstention" : "pos-absent";
-      const label = p === 1 ? "pour" : p === -1 ? "contre" : p === 0 ? "abstention" : "position non déterminée";
-      return `<span class="pos-chip ${cls}" title="${esc(g.sigle)} : ${label}"></span>`;
-    }).join("");
+    return state.meta.groupes.map((g, i) => positionChip(
+      s.p[i],
+      `${g.sigle} : ${positionLabel(s.p[i])}`,
+    )).join("");
+  }
+
+  function essentielBadge(family) {
+    if (!family) return "";
+    return `<a class="badge neutre" href="questionnaire.html?affiner=${encodeURIComponent(family.id)}" title="Vote rattaché à un texte du questionnaire : voir la question essentielle">question essentielle</a>`;
+  }
+
+  // Positions des 12 groupes sur une famille de questions essentielles :
+  // - passage : position sur le vote de passage (ancre), lecture directe ;
+  // - majorite : position majoritaire sur les votes orientés, pondérée par la participation
+  //   (égalité → 0, aucune contribution → null) ;
+  // - divergences : groupe où cette majorité contredit le vote de passage (méthode vs fond).
+  function familyStances(family, scrutinByUid) {
+    const count = state.meta.groupes.length;
+    const anchorVote = family.votes.find((vote) => vote.u === family.anchor);
+    const anchorScrutin = scrutinByUid.get(family.anchor);
+    const anchorPositions = anchorVote?.p ?? anchorScrutin?.p ?? [];
+    const passage = Array.from({ length: count }, (_, i) => {
+      const value = anchorPositions[i];
+      return value === undefined ? null : value;
+    });
+    const totals = Array.from({ length: count }, () => [0, 0, 0]); // contre, abstention, pour
+    for (const vote of family.votes) {
+      const scrutin = scrutinByUid.get(vote.u);
+      if (!scrutin) continue;
+      const base = vote.p ?? scrutin.p;
+      for (let i = 0; i < count; i += 1) {
+        const raw = base[i];
+        if (raw === null || raw === undefined) continue;
+        const weight = scrutin.q?.[i] ?? 0;
+        if (weight > 0) totals[i][(vote.dir === 1 ? raw : -raw) + 1] += weight;
+      }
+    }
+    const majorite = totals.map(([contre, abstention, pour]) => {
+      const max = Math.max(contre, abstention, pour);
+      if (max <= 0) return null;
+      const winners = [[pour, 1], [abstention, 0], [contre, -1]].filter(([weight]) => weight === max);
+      return winners.length === 1 ? winners[0][1] : 0;
+    });
+    const partagee = totals.map(([contre, abstention, pour]) => {
+      const max = Math.max(contre, abstention, pour);
+      return max > 0 && [[pour], [abstention], [contre]].filter(([weight]) => weight === max).length !== 1;
+    });
+    const divergences = passage.map((value, i) => value !== null && majorite[i] !== null && value !== majorite[i]);
+    return { passage, majorite, partagee, divergences };
   }
 
   function setText(id, text) {
@@ -296,7 +351,8 @@ const VV = (() => {
   return {
     loadJSON, loadAll, loadRibbon, get state() { return state; },
     fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, kappa, heatColor, textOn,
-    stance, esc, safeColor, period, setText, renderRibbon, initSignature, positionChips,
+    stance, esc, safeColor, period, setText, renderRibbon, initSignature, positionChips, positionChip,
+    positionLabel, essentielBadge, familyStances,
     encodeAnswers, decodeAnswers, share,
   };
 })();

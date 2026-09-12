@@ -356,6 +356,12 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 .pos-chip { display: inline-block; width: 0.62rem; height: 0.62rem; margin-right: 2px; border-radius: 2px; }
 .pos-pour { background: var(--pour); } .pos-contre { background: var(--contre); }
 .pos-abstention { background: var(--abstention); } .pos-absent { background: var(--absent); }
+a.badge { text-decoration: none; }
+.pos-chip.diverge { outline: 2px dotted var(--accent); outline-offset: 1px; }
+table.stances tr.theme-row th { text-align: left; font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); padding-top: 0.9rem; }
+table.stances .stance-cell { text-align: center; }
+table.stances .stance-label { text-align: left; font-weight: 500; white-space: normal; min-width: 15rem; }
+table.stances .stance-label .date { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
 .stance {
   display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
   padding: 0.1rem 0.45rem; border-radius: 100vw; background: var(--linen);

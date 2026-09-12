@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=20">
+  <link rel="stylesheet" href="assets/style.css?v=22">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -103,9 +103,18 @@
         <label for="f-periode">Filtrer par période</label>
         <select id="f-periode"><option value="">Toute la législature</option></select>
       </div>
+      <div class="field">
+        <label for="f-perimetre">Périmètre</label>
+        <select id="f-perimetre">
+          <option value="">Tous les votes</option>
+          <option value="essentiel">Questions essentielles — tous votes orientés</option>
+          <option value="passage">Questions essentielles — un vote par texte</option>
+        </select>
+      </div>
       <button type="button" class="ghost" id="f-reset">Réinitialiser</button>
       <label class="check"><input type="checkbox" id="f-abst"> Exclure les abstentions du calcul</label>
     </div>
+    <p class="filters-result" id="perimetre-note" hidden></p>
     <div class="card">
       <div class="ref-chips" id="ref-chips" role="group" aria-label="Groupe de référence"></div>
       <ul class="rank-list" id="ranking" aria-live="polite"></ul>
@@ -120,6 +129,17 @@
       <summary>Voir la matrice complète des 66 paires</summary>
       <div class="table-scroll">
         <table class="matrix" id="matrix" aria-label="Matrice des taux d'accord entre groupes (en %)"></table>
+      </div>
+    </details>
+    <details class="aide" id="textes">
+      <summary>Positions des 12 groupes sur les questions essentielles (vote de passage)</summary>
+      <p>Une ligne par texte, la position de chaque groupe sur le <strong>vote de passage</strong>
+      (« l'ensemble… ») : c'est la seule position directement interprétable, sans inférence.
+      Suit le filtre « thème » ci-dessus. La pastille cerclée signale un groupe dont la position
+      majoritaire sur l'ensemble des votes du texte diffère de son vote de passage — un signal de
+      désaccord de méthode ou de rédaction, pas nécessairement de fond (voir Méthode §11-§12).</p>
+      <div class="table-scroll">
+        <table class="data stances" id="stances" aria-label="Position de chaque groupe sur le vote de passage de chaque texte essentiel"></table>
       </div>
     </details>
   </section>
@@ -181,7 +201,7 @@
     </div>
   </div>
 </footer>
-<script src="assets/app.js?v=20"></script>
-<script src="assets/compare.js?v=20"></script>
+<script src="assets/app.js?v=22"></script>
+<script src="assets/compare.js?v=22"></script>
 </body>
 </html>

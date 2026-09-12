@@ -12,7 +12,7 @@ sont figées dans l'image au moment du build**. Rafraîchir les données = recon
 À chaque **push sur `main`** (et sur demande) :
 
 1. **test** : lance le pipeline complet (`python pipeline/run_all.py` — télécharge les sources
-   AN/Sénat, construit la base, régénère les exports), puis les 62 tests, `check_site.mjs`
+   AN/Sénat, construit la base, régénère les exports), puis les 71 tests, `check_site.mjs`
    (cohérence JS/exports) et `html-validate`.
 2. **build-and-push** (jamais sur les pull requests) : construit l'image Docker (le pipeline
    tourne dans le build), scanne l'image avec **Trivy** (échec si CVE CRITICAL/HIGH corrigeable),

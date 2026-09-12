@@ -3,6 +3,9 @@
 (async () => {
   const state = await VV.loadAll();
   VV.renderRibbon();
+  const questions = await VV.loadJSON("questionnaire.json");
+  const familyOfUid = new Map();
+  for (const fam of questions.families) for (const vote of fam.votes) familyOfUid.set(vote.u, fam);
   const TYPES = { SPO: "Scrutin public ordinaire", SPS: "Scrutin public solennel", MOC: "Motion de censure" };
   const VUS_KEY = "vv-derniers-vus";
   const FEED = 60;
@@ -75,6 +78,7 @@
         <span class="badge theme">${VV.esc(s.th)}</span>
         <span class="badge ${s.r === "adopté" ? "adopte" : "rejete"}">${VV.esc(s.r || "–")}</span>
         <span class="badge neutre">${VV.esc(TYPES[s.t] || s.t)}</span>
+        ${VV.essentielBadge(familyOfUid.get(s.u))}
         ${Math.abs(s.m) <= 10 ? `<span class="badge neutre" title="Écart à la majorité (pour − contre ; pour − seuil requis pour une motion de censure)">serré · ${s.m > 0 ? "+" : ""}${s.m}</span>` : ""}
         ${s.pv?.length ? `<span class="badge neutre" title="Groupe(s) dont le basculement changerait à lui seul le résultat">décisif : ${s.pv.slice(0, 3).map((i) => VV.esc(state.meta.groupes[i].sigle)).join(", ")}${s.pv.length > 3 ? "…" : ""}</span>` : ""}
         ${s.b === 0 ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé dans les scores">doublon</span>` : ""}

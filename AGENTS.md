@@ -5,9 +5,10 @@
 - `python pipeline/run_all.py` — pipeline complet : revalide les sources (ETag/Last-Modified,
   retéléchargées seulement si l'AN/Sénat a publié ; `--force` pour tout retélécharger et
   reconstruire), construit `data/france-votes.db`, calcule scores/robustesse et régénère
-  `site/data/*.json` (~2 min ; saute les étapes 2-3 si rien n'a changé) ; écrit
-  `data/derniere_execution.json` (gitignoré).
-- `python -m unittest discover -s pipeline/tests` — 62 tests ; nécessitent la base et les exports.
+  `site/data/*.json` (~2 min ; saute les étapes 2-3 seulement si sources **et code** inchangés,
+  empreintes enregistrées dans le marqueur, et exports au moins aussi récents que la base) ;
+  écrit `data/derniere_execution.json` (gitignoré).
+- `python -m unittest discover -s pipeline/tests` — 71 tests ; nécessitent la base et les exports.
 - `node pipeline/check_site.mjs` — vérifie le JS contre les exports (66/66 accords, kappa,
   `?v=N` identique sur les 5 pages, clés lues par le questionnaire) ; à lancer après toute
   modification de `score.py` ou de `site/assets/*.js`.
@@ -35,6 +36,13 @@
   participations, `m` marge, `pv` groupes décisifs) sont indexés comme `meta.groupes`.
 - Clés de paire `A|B` toujours dans l'ordre canonique (jamais alphabétique) : utiliser
   `VV.pairKey()`, jamais `.sort()`.
+- Questions essentielles : `score.py:questionnaire_families()` exporte par famille un `anchor`
+  (uid du vote de passage) ; `VV.familyStances()` (`app.js`) est l'unique calcul des positions
+  passage/majorité (matrice du comparateur), contrat vérifié par `check_site.mjs`.
+- Comparateur : `?perimetre=essentiel|passage` restreint aux votes orientés (positions × `dir`,
+  `b := 1` — la déduplication ne s'applique pas, comme au questionnaire) ; robustesse et variantes
+  précalculées sont masquées dans ces périmètres. L'orientation est une inférence de sens, jamais
+  une intention : garder les disclaimers §8/§11 de la méthode.
 - Thèmes = base Dosleg du Sénat uniquement (premier thème de la liste retenu, 24 libellés courts ;
   l'open data AN n'expose pas d'`indexation` en législature 17) ; UDR = fusion
   `PO847173`/`PO872880`/`PO845520` ; 12 scrutins aux réfs de groupes toutes corrompues (`PO0`)
@@ -53,8 +61,9 @@
   uniquement) ; jamais de `innerHTML` avec une valeur brute.
 - Après toute modification de `site/assets/*.js|css`, incrémenter `?v=N` dans les 5 pages HTML
   (sinon le navigateur sert l'ancien fichier depuis son cache).
-- Pastilles de position : `VV.positionChips()` (`app.js`) est l'unique implémentation (explorateur
-  + derniers votes). Page `derniers.html` : la mémoire « déjà vu » est locale
+- Pastilles de position : `VV.positionChips()` / `VV.positionChip()` (`app.js`) est l'unique
+  implémentation (explorateur, derniers votes, matrice) ; badge « question essentielle » via
+  `VV.essentielBadge()`. Page `derniers.html` : la mémoire « déjà vu » est locale
   (`localStorage vv-derniers-vus`, n° de scrutin max), jamais transmise ; le résumé porte sur les
   30 derniers jours de séance calés sur le dernier scrutin, pas sur la date du jour.
 - PWA : `manifest.webmanifest` + `service-worker.js` (icônes dans `site/assets/`). Si la liste
@@ -69,4 +78,7 @@
 
 - Python 3.12 stdlib uniquement (ni numpy ni pandas) ; Node 26 sert seulement à
   `check_site.mjs` et `npx`.
+- Édition de fichiers sous PowerShell : outils d'édition fichier par fichier uniquement. Jamais de
+  remplacement via indexation de chaîne (`$s[0]`) ni de réécriture globale `Set-Content` : ces deux
+  méthodes ont déjà corrompu des fichiers (caractères remplacés dans tout le fichier, mojibake).
 - Commiter uniquement sur demande explicite de l'utilisateur.

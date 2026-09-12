@@ -32,7 +32,7 @@ pipeline/
   score.py       pondérations, accords, kappa, robustesse, exports du site
   run_all.py     les trois étapes d'affilée (saute 2-3 si les sources n'ont pas changé)
   check_site.mjs vérification du JS de site contre les exports
-  tests/         62 tests unitaires et d'intégration
+  tests/         71 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db
 site/            site statique (aucun framework, aucun build) + données JSON générées
   assets/        style, JS natif, icônes (icon-192, icon-512 « any maskable », apple-touch), og.png
@@ -40,7 +40,7 @@ site/            site statique (aucun framework, aucun build) + données JSON g�
 deploy/nginx.conf configuration nginx de production (CSP, gzip, cache, PWA)
 Dockerfile       image de prod : pipeline exécuté au build, nginx sert site/
 docker-compose.yml   test local / plugin Compose Unraid
-.github/workflows/main.yml   CI (pipeline + 62 tests + check_site + HTML), build GHCR,
+.github/workflows/main.yml   CI (pipeline + 71 tests + check_site + HTML), build GHCR,
                              scan Trivy, contrôle quotidien des sources (build si publication)
 DEPLOYMENT.md    guide GitHub → GHCR → Unraid (DNS, HTTPS, mises à jour)
 ```
@@ -53,14 +53,19 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
 - **Comparer** : matrice des taux d'accord entre les 12 groupes, fiche détaillée par paire
   (accord, kappa, intervalle de robustesse, timeline par période, accord par thème, votes qui
   rapprochent / opposent), carte MDS calculée uniquement à partir des votes, état partageable
-  dans l'URL (`?a=RN&b=ECOS&theme=Budget&abst=1`), option d'exclusion des abstentions.
+  dans l'URL (`?a=RN&b=ECOS&theme=Budget&abst=1`), option d'exclusion des abstentions. Trois
+  périmètres : **tous les votes**, **questions essentielles** (les votes des 54 textes du
+  questionnaire, orientés vers leur adoption) et **vote de passage** de chaque texte (lecture
+  directe). Les limites (orientation = inférence, méthode ≠ fond) sont documentées dans la
+  méthodologie §8 et §11.
 - **Explorer les votes** : les 8 434 scrutins filtrables (thème, période, type, position d'un
-  groupe, recherche plein texte), tri par serrage, badges « serré » et « décisif » (marge et
-  groupes dont le basculement change le résultat), export CSV, chacun relié à sa page officielle.
+  groupe, recherche plein texte, texte essentiel), tri par serrage, badges « serré » et
+  « décisif » (marge et groupes dont le basculement change le résultat), export CSV, chacun relié
+  à sa page officielle.
 - **Derniers votes** : fil des 60 scrutins les plus récents, groupés par séance, avec résultat,
   marge, groupes décisifs et position des douze groupes ; résumé des 30 derniers jours de séance
-  **partageable** ; un badge « nouveau » marque ce qui a été publié depuis votre dernière visite
-  (mémoire locale uniquement, rien n'est envoyé).
+  **partageable** ; badge « nouveau » et lien vers la question essentielle quand le vote en fait
+  partie (mémoire locale uniquement, rien n'est envoyé).
 - **Questionnaire** : une question par texte de loi, générée depuis le titre officiel et agrégée
   sur tous ses votes ; **affinage vote par vote** possible pour chaque texte ; résultat
   **partageable** (bouton Partager natif / lien `?r=…`, vue allégée pour capture d'écran) et

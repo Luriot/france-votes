@@ -4,6 +4,9 @@
   const state = await VV.loadAll();
   VV.renderRibbon();
   const sigles = state.meta.groupes.map((g) => g.sigle);
+  const questions = await VV.loadJSON("questionnaire.json");
+  const familyOfUid = new Map();
+  for (const fam of questions.families) for (const vote of fam.votes) familyOfUid.set(vote.u, fam);
 
   const elSearch = document.getElementById("f-recherche");
   const elTheme = document.getElementById("f-theme");
@@ -12,6 +15,7 @@
   const elGroupe = document.getElementById("f-groupe");
   const elPosition = document.getElementById("f-position");
   const elDoublons = document.getElementById("f-doublons");
+  const elEssentiel = document.getElementById("f-essentiel");
   const elCount = document.getElementById("resultat-count");
   const elBody = document.getElementById("votes-body");
   const elMore = document.getElementById("more");
@@ -50,6 +54,7 @@
       if (q && !s.ti.toLowerCase().includes(q)) return false;
       if (doublons === "uniques" && s.b === 0) return false;
       if (doublons === "doublons" && s.b !== 0) return false;
+      if (elEssentiel.value === "essentiel" && !familyOfUid.has(s.u)) return false;
       if (groupe && position) {
         const idx = sigles.indexOf(groupe);
         if (s.p[idx] !== Number(position)) return false;
@@ -73,6 +78,7 @@
           <div style="margin-top:.2rem">
             <span class="badge theme">${VV.esc(s.th)}</span>
             <span class="badge neutre">${VV.esc(TYPES[s.t] || s.t)}</span>
+            ${VV.essentielBadge(familyOfUid.get(s.u))}
             ${s.b === 0 ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé dans les scores">doublon</span>` : ""}
             ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
             ${Math.abs(s.m) <= 10 ? `<span class="badge neutre" title="Écart à la majorité (pour − contre ; pour − seuil requis pour une motion de censure)">serré · ${s.m > 0 ? "+" : ""}${s.m}</span>` : ""}
@@ -85,14 +91,14 @@
     elMore.hidden = rows.length <= limit;
   }
 
-  for (const el of [elSearch, elTheme, elPeriode, elType, elGroupe, elPosition, elDoublons, elTri]) {
+  for (const el of [elSearch, elTheme, elPeriode, elType, elGroupe, elPosition, elDoublons, elEssentiel, elTri]) {
     el?.addEventListener("input", () => { limit = 50; render(); });
     el?.addEventListener("change", () => { limit = 50; render(); });
   }
   elMore.addEventListener("click", () => { limit += 100; render(); });
   document.getElementById("f-reset").addEventListener("click", () => {
     elSearch.value = ""; elTheme.value = ""; elPeriode.value = ""; elType.value = "";
-    elGroupe.value = ""; elPosition.value = ""; elDoublons.value = "";
+    elGroupe.value = ""; elPosition.value = ""; elDoublons.value = ""; elEssentiel.value = "";
     if (elTri) elTri.value = "recent";
     limit = 50; render();
   });

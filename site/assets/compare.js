@@ -29,6 +29,45 @@
     selPeriod.append(new Option(p.replace("-", " "), p));
   }
 
+  // Questions essentielles (questionnaire) : périmètre orienté vers l'adoption des textes.
+  // Chaque vote de famille est ramené sur l'axe « pour/contre le texte » (dir ±1) ; la
+  // déduplication du corpus ne s'applique pas (b := 1), comme dans le questionnaire.
+  const questions = await VV.loadJSON("questionnaire.json");
+  const familyOfUid = new Map();
+  const anchorUids = new Set();
+  for (const fam of questions.families) {
+    for (const vote of fam.votes) familyOfUid.set(vote.u, { fam, vote });
+    if (fam.anchor && fam.votes.some((vote) => vote.u === fam.anchor)) anchorUids.add(fam.anchor);
+  }
+  const scrutinsByUid = new Map(state.scrutins.map((s) => [s.u, s]));
+  const essentialScrutins = [];
+  for (const s of state.scrutins) {
+    const hit = familyOfUid.get(s.u);
+    if (!hit) continue;
+    const base = hit.vote.p ?? s.p;
+    essentialScrutins.push({
+      ...s,
+      b: 1,
+      p: hit.vote.dir === 1 ? base : base.map((x) => (x === null || x === undefined ? null : -x)),
+    });
+  }
+  const passageScrutins = essentialScrutins.filter((s) => anchorUids.has(s.u));
+  const PERIMETRES = {
+    essentiel: {
+      list: essentialScrutins,
+      note: `Périmètre : les ${VV.fmtNum(essentialScrutins.length)} votes des ${questions.families.length} textes `
+        + "essentiels, orientés vers l'adoption du texte (corrélation ≥ 0,5 avec le vote de passage ; les votes "
+        + "faiblement corrélés sont écartés). Cela mesure un sens de vote, pas une intention : voir Méthode §11-§12.",
+    },
+    passage: {
+      list: passageScrutins,
+      note: `Périmètre : un vote par texte — le vote de passage (« l'ensemble… », ${VV.fmtNum(passageScrutins.length)} textes), `
+        + "seule position directement interprétable, sans inférence d'orientation.",
+    },
+  };
+  const selPerimetre = document.getElementById("f-perimetre");
+  const notePerimetre = document.getElementById("perimetre-note");
+
   const selected = { a: "RN", b: "LFI-NFP" };
   let refGroup = "RN";
   const elAbst = document.getElementById("f-abst");
@@ -44,6 +83,7 @@
   if (selected.b === selected.a) selected.b = sigles.find((sigle) => sigle !== selected.a) ?? selected.b;
   if ([...selTheme.options].some((o) => o.value === params.get("theme"))) selTheme.value = params.get("theme");
   if (periodes.includes(params.get("periode"))) selPeriod.value = params.get("periode");
+  if (params.get("perimetre") in PERIMETRES) selPerimetre.value = params.get("perimetre");
   if (params.get("abst") === "1" && elAbst) {
     elAbst.checked = true;
     excludeAbst = true;
@@ -55,6 +95,7 @@
     p.set("b", selected.b);
     if (selTheme.value) p.set("theme", selTheme.value);
     if (selPeriod.value) p.set("periode", selPeriod.value);
+    if (selPerimetre.value) p.set("perimetre", selPerimetre.value);
     if (excludeAbst) p.set("abst", "1");
     history.replaceState(null, "", `${location.pathname}?${p}${location.hash}`);
   }
@@ -63,15 +104,27 @@
     return { excludeAbstention: excludeAbst };
   }
 
+  function scope() {
+    const conf = PERIMETRES[selPerimetre.value];
+    return conf ? conf.list : state.scrutins;
+  }
+
   function filtered() {
     const theme = selTheme.value;
     const periode = selPeriod.value;
-    return state.scrutins.filter((s) =>
+    return scope().filter((s) =>
       (theme === "" || s.th === theme) && (periode === "" || VV.period(s) === periode));
   }
 
   function isFiltered() {
-    return selTheme.value !== "" || selPeriod.value !== "";
+    return selTheme.value !== "" || selPeriod.value !== "" || selPerimetre.value !== "";
+  }
+
+  function renderPerimetreNote() {
+    if (!notePerimetre) return;
+    const conf = PERIMETRES[selPerimetre.value];
+    notePerimetre.hidden = !conf;
+    notePerimetre.textContent = conf ? conf.note : "";
   }
 
   /* --- groupes en un coup d'œil --- */
@@ -219,6 +272,49 @@
     table.append(tbody);
   }
 
+  /* --- positions sur les questions essentielles (vote de passage) --- */
+
+  function renderStances() {
+    const table = document.getElementById("stances");
+    if (!table) return;
+    const theme = selTheme.value;
+    // Un thème de texte = celui de son vote de passage (les motions sont « Non classé »,
+    // comme dans l'explorateur), pas le libellé interne de la famille.
+    const themeOf = (fam) => scrutinsByUid.get(fam.anchor)?.th ?? fam.theme;
+    const fams = questions.families
+      .filter((fam) => theme === "" || themeOf(fam) === theme)
+      .slice()
+      .sort((a, b) => themeOf(a).localeCompare(themeOf(b), "fr") || String(a.dates[0]).localeCompare(String(b.dates[0])));
+    const header = `<thead><tr><th scope="col">Texte</th>${groupes
+      .map((g) => `<th scope="col" title="${VV.esc(g.nom)}">${VV.esc(g.sigle)}</th>`).join("")}</tr></thead>`;
+    const rows = [];
+    let currentTheme = null;
+    for (const fam of fams) {
+      const famTheme = themeOf(fam);
+      if (theme === "" && famTheme !== currentTheme) {
+        currentTheme = famTheme;
+        rows.push(`<tr class="theme-row"><th colspan="${groupes.length + 1}">${VV.esc(famTheme)}</th></tr>`);
+      }
+      const stances = VV.familyStances(fam, scrutinsByUid);
+      const cells = groupes.map((g, i) => {
+        let title = `${g.sigle} : ${VV.positionLabel(stances.passage[i])} (vote de passage)`;
+        if (stances.divergences[i]) {
+          const majorite = stances.partagee[i] ? "partagée (égalité)" : VV.positionLabel(stances.majorite[i]);
+          title += ` — position pondérée par la participation sur les ${fam.votes.length} votes du texte : ${majorite} (peut refléter un désaccord de méthode)`;
+        }
+        return `<td class="stance-cell">${VV.positionChip(stances.passage[i], title, stances.divergences[i])}</td>`;
+      }).join("");
+      const anchor = scrutinsByUid.get(fam.anchor);
+      rows.push(`<tr>
+        <th scope="row" class="stance-label">
+          <a href="questionnaire.html?affiner=${encodeURIComponent(fam.id)}">${VV.esc(fam.label)}</a>
+          <span class="date">${VV.fmtDate(anchor?.d ?? fam.dates[0])}</span>
+        </th>${cells}</tr>`);
+    }
+    const empty = `<tr><td colspan="${groupes.length + 1}">Aucun texte essentiel pour ce thème sélectionné.</td></tr>`;
+    table.innerHTML = `${header}<tbody>${rows.length ? rows.join("") : empty}</tbody>`;
+  }
+
   /* --- carte MDS --- */
   function renderMap() {
     const svg = document.getElementById("map");
@@ -314,6 +410,9 @@
     const solid = themeRows.filter((x) => x.n >= 20);
     const robust = solid.length ? solid : themeRows;
     const best = robust[0], worst = robust[robust.length - 1];
+    const perimetreTag = selPerimetre.value === "essentiel"
+      ? "Sur les votes orientés des textes essentiels"
+      : selPerimetre.value === "passage" ? "Sur le vote de passage de chaque texte essentiel" : "";
     const bilan = `${selected.a} et ${selected.b} ont voté de la même manière sur ${VV.fmtPct(stat.accord)} ` +
       `de leurs ${VV.fmtNum(stat.n)} votes partagés` +
       (best ? ` — point de convergence maximal sur « ${VV.esc(best.theme)} » (${VV.fmtPct(best.accord)})` : "") +
@@ -353,7 +452,8 @@
         <div class="meta">
           <span class="date">${VV.fmtDate(s.d)}</span>
           <span class="badge theme">${VV.esc(s.th)}</span>
-          ${s.dup ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé">doublon</span>` : ""}
+          ${VV.essentielBadge(familyOfUid.get(s.u)?.fam)}
+          ${s.dup && selPerimetre.value === "" ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé">doublon</span>` : ""}
           ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
         </div>
         <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
@@ -389,7 +489,7 @@
         <button type="button" class="ghost" id="partager-paire">Partager</button>
         <a href="#votes">Voir les votes ci-dessous ↓</a>
       </div>
-      <p class="note" style="margin:.6rem 0 0">${bilan}</p>
+      <p class="note" style="margin:.6rem 0 0">${perimetreTag ? `<strong>${perimetreTag}.</strong> ` : ""}${bilan}</p>
       ${spark}
       ${robBlock}
       <h3 style="margin-top:1.3rem">Accord par thème</h3>
@@ -419,6 +519,8 @@
       ];
       if (best) morceaux.push(`convergence max « ${best.theme} » (${VV.fmtPct(best.accord)})`);
       if (worst && worst !== best) morceaux.push(`désaccord max « ${worst.theme} » (${VV.fmtPct(worst.accord)})`);
+      if (selPerimetre.value === "essentiel") morceaux.push("périmètre : questions essentielles (votes orientés)");
+      if (selPerimetre.value === "passage") morceaux.push("périmètre : un vote par texte (vote de passage)");
       const status = await VV.share({
         title: "Votes 2027 — comparaison de groupes",
         text: `Votes 2027 — ${morceaux.join(" · ")}.`,
@@ -466,11 +568,14 @@
     renderRanking();
     renderPair();
     showNeighbours(selected.a);
+    renderStances();
+    renderPerimetreNote();
     syncUrl();
   }
 
   selTheme.addEventListener("change", renderAll);
   selPeriod.addEventListener("change", renderAll);
+  selPerimetre.addEventListener("change", renderAll);
   elAbst?.addEventListener("change", () => {
     excludeAbst = elAbst.checked;
     renderAll();
@@ -478,6 +583,7 @@
   document.getElementById("f-reset").addEventListener("click", () => {
     selTheme.value = "";
     selPeriod.value = "";
+    selPerimetre.value = "";
     if (elAbst) elAbst.checked = false;
     excludeAbst = false;
     renderAll();

@@ -88,9 +88,11 @@ data.senat.fr). Sans réseau, le build échoue — c'est volontaire, aucune donn
 
 ## 7. Dépannage
 
-- **Trivy échoue sur une CVE de l'image nginx** : mettre à jour `nginx:stable-alpine` (le tag
-  suit les correctifs) ou ajouter l'identifiant dans `.trivyignore.yaml` en documentant la raison,
-  comme dans BrunoFresh.
+- **Trivy échoue sur une CVE de l'image nginx** : le Dockerfile applique déjà `apk upgrade`
+  dans l'étage runtime. Si une CVE persistante apparaît (paquet non corrigé en amont), deux
+  options : attendre la mise à jour Alpine, ou ajouter l'identifiant dans `.trivyignore.yaml`
+  en documentant la raison (comme dans BrunoFresh). `ignore-unfixed: true` est déjà actif :
+  seules les CVE **corrigeables** font échouer le build.
 - **Ancienne version servie par le navigateur** : les assets du site sont versionnés `?v=N` ;
   un rafraîchissement suffit. Côté données, `Cache-Control` est limité à 1 h.
 - **Le workflow planifié ne se déclenche pas** : les crons GitHub peuvent être retardés de

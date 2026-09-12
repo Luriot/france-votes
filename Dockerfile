@@ -11,6 +11,9 @@ RUN python pipeline/run_all.py \
 
 # Étape 2 — service statique : nginx sert site/ (données figées dans l'image).
 FROM nginx:stable-alpine AS runtime
+# Le tag nginx peut retarder les paquets Alpine : on applique les correctifs de sécurité
+# (sinon Trivy bloque le build sur des CVE corrigées, ex. util-linux 2.42.1 → 2.42.3).
+RUN apk --no-cache upgrade
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/site /usr/share/nginx/html
 EXPOSE 80

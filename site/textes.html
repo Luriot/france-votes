@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b3a24">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Votes 2027">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; object-src 'none'">
+  <title>Textes essentiels — Votes 2027</title>
+  <meta name="description" content="Les 54 textes essentiels de l'Assemblée nationale et la position de chaque groupe sur leur vote de passage, avec les votes rattachés.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Textes essentiels — Votes 2027">
+  <meta property="og:description" content="Position des douze groupes sur le vote de passage des 54 textes essentiels.">
+  <meta property="og:image" content="assets/og.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="assets/style.css?v=24">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="site">
+  <div class="wrap">
+    <div class="nav-shell">
+      <a class="brand" href="index.html">Votes<span>2027</span></a>
+      <nav class="site" aria-label="Navigation principale">
+        <a href="index.html">Comparer</a>
+        <a href="votes.html">Votes</a>
+        <a href="textes.html" aria-current="page">Textes</a>
+        <a href="questionnaire.html">Questionnaire</a>
+        <a href="methodologie.html">Méthode</a>
+      </nav>
+      <form class="nav-search" action="votes.html" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
+        <button type="submit" class="ghost">Chercher</button>
+      </form>
+    </div>
+    <div class="ribbon" role="group" aria-label="Couverture des données">
+      <span><b id="rb-scrutins">…</b></span>
+      <span><b id="rb-retenus">…</b></span>
+      <span><b id="rb-themes">…</b></span>
+      <span><b id="rb-doublons">…</b></span>
+      <span><b id="rb-date">…</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" class="wrap">
+  <h1>Textes essentiels</h1>
+  <p>Les 54 textes retenus pour le questionnaire, regroupés par thème : position de chaque groupe
+  sur le <strong>vote de passage</strong> de son texte — la seule position directement
+  interprétable, sans inférence. Les votes rattachés (amendements, articles) sont repliés sous
+  chaque texte, avec leur sens par rapport au texte.</p>
+
+  <div class="controls">
+    <div class="field">
+      <label for="f-recherche">Recherche dans le titre</label>
+      <input type="search" id="f-recherche" placeholder="ex. finances, protection…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="f-theme">Thème</label>
+      <select id="f-theme"><option value="">Tous</option></select>
+    </div>
+    <button type="button" class="ghost" id="partager-textes">Partager cette page</button>
+  </div>
+
+  <p class="filters-result" id="resultat-count" aria-live="polite">Chargement…</p>
+
+  <div class="card">
+    <div class="table-scroll">
+      <table class="data stances" aria-label="Position de chaque groupe sur le vote de passage des textes essentiels">
+        <thead id="textes-head"></thead>
+        <tbody id="textes-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <details class="aide">
+    <summary>Comment lire ce tableau ?</summary>
+    <p>Vert = pour, rouge = contre, ocre = abstention, gris clair = position indéterminée. Une
+    pastille cerclée signale un groupe dont la position majoritaire sur l'ensemble des votes du
+    texte diffère de son vote de passage — un éventuel désaccord de méthode ou de rédaction, pas
+    nécessairement de fond. Les sigles en tête de colonne mènent à la fiche du groupe ; chaque
+    titre mène à la question correspondante dans le questionnaire.</p>
+  </details>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>Données : open data de l'Assemblée nationale (licence ouverte) ; thèmes officiels du Sénat.
+    Sélection et orientation des textes décrites dans la <a href="methodologie.html">méthodologie</a>
+    (§11-§12).</p>
+  </div>
+</footer>
+<script src="assets/app.js?v=24"></script>
+<script src="assets/textes.js?v=24"></script>
+</body>
+</html>

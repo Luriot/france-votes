@@ -38,6 +38,15 @@ class TestPonderation(unittest.TestCase):
         s = make_scrutin({"RN": "pour"}, base=0.0)
         self.assertEqual(score.weight(s, "RN", "EPR", "primary"), 0.0)
 
+    def test_participations_par_groupe(self):
+        participe = make_scrutin({sigle: "pour" for sigle in score.SIGLES},
+                                 parts={sigle: 0.5 for sigle in score.SIGLES})
+        absent = make_scrutin({sigle: None for sigle in score.SIGLES})
+        parts = score.group_participations([participe, absent])
+        self.assertEqual(parts["RN"], 0.5, "moyenne sur les scrutins où la position est déterminée")
+        self.assertIsNone(score.group_participations([absent])["RN"],
+                          "aucune position déterminée → participation inconnue, pas 0")
+
 
 class TestScores(unittest.TestCase):
     def test_accord_et_absent(self):

@@ -307,6 +307,9 @@ table.matrix .diag { background: repeating-linear-gradient(45deg, var(--linen), 
 /* --- groupes en un coup d'œil --- */
 
 .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--gap); }
+a.group-card, a.rank-row { text-decoration: none; color: inherit; }
+.ref-chips a { padding: 0.4rem 0.7rem; font-size: 0.8rem; border-radius: 100vw; border: var(--border) solid color-mix(in srgb, var(--ink) 30%, transparent); text-decoration: none; color: var(--ink); }
+.ref-chips a[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .group-card {
   text-align: left; width: 100%; font: inherit; cursor: pointer;
   background: var(--chalk); border: var(--border) solid color-mix(in srgb, var(--ink) 16%, transparent);
@@ -360,7 +363,10 @@ a.badge { text-decoration: none; }
 .pos-chip.diverge { outline: 2px dotted var(--accent); outline-offset: 1px; }
 table.stances tr.theme-row th { text-align: left; font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); padding-top: 0.9rem; }
 table.stances .stance-cell { text-align: center; }
-table.stances .stance-label { text-align: left; font-weight: 500; white-space: normal; min-width: 15rem; }
+table.stances .stance-label { position: sticky; left: 0; background: var(--chalk); text-align: left; font-weight: 500; white-space: normal; min-width: 15rem; }
+table.stances th a { color: inherit; text-decoration: none; }
+table.stances th a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+table.stances .col-hi { background: color-mix(in srgb, var(--lime) 55%, transparent); }
 table.stances .stance-label .date { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
 .stance {
   display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
@@ -501,7 +507,7 @@ footer.site .bottom { margin-top: var(--section); padding-top: 1.2rem; border-to
   nav.site a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 0.15rem; }
   button, select, input[type="search"] { min-height: 44px; font-size: 16px; }
   .brand { display: inline-flex; align-items: center; min-height: 44px; }
-  .ref-chips button { min-height: 44px; }
+  .ref-chips button, .ref-chips a { min-height: 44px; display: inline-flex; align-items: center; }
   .check { min-height: 44px; }
   .q-actions button { min-height: 44px; }
 }

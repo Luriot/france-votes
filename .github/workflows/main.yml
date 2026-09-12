@@ -45,7 +45,7 @@ jobs:
         run: node pipeline/check_site.mjs
 
       - name: Validation HTML
-        run: npx --yes html-validate@9 site/index.html site/votes.html site/questionnaire.html site/methodologie.html
+        run: npx --yes html-validate@9 site/index.html site/votes.html site/textes.html site/groupe.html site/questionnaire.html site/methodologie.html
 
   # Uniquement sur le cron quotidien : rejoue le pipeline sur les données en cache.
   # La sortie `changed` décide si l'image doit être reconstruite.

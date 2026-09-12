@@ -159,7 +159,7 @@ class TestExports(unittest.TestCase):
 
     def test_questionnaire_essentiel(self):
         data = json.loads((SITE_DATA / "questionnaire.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["version"], 3)
+        self.assertEqual(data["version"], 4)
         self.assertGreater(len(data["families"]), 20)
         for famille in data["families"]:
             self.assertTrue(famille["label"].startswith("Faut-il"))

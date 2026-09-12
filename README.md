@@ -32,7 +32,7 @@ pipeline/
   score.py       pondérations, accords, kappa, robustesse, exports du site
   run_all.py     les trois étapes d'affilée (saute 2-3 si les sources n'ont pas changé)
   check_site.mjs vérification du JS de site contre les exports
-  tests/         71 tests unitaires et d'intégration
+  tests/         72 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db
 site/            site statique (aucun framework, aucun build) + données JSON générées
   assets/        style, JS natif, icônes (icon-192, icon-512 « any maskable », apple-touch), og.png
@@ -40,13 +40,30 @@ site/            site statique (aucun framework, aucun build) + données JSON g�
 deploy/nginx.conf configuration nginx de production (CSP, gzip, cache, PWA)
 Dockerfile       image de prod : pipeline exécuté au build, nginx sert site/
 docker-compose.yml   test local / plugin Compose Unraid
-.github/workflows/main.yml   CI (pipeline + 71 tests + check_site + HTML), build GHCR,
+.github/workflows/main.yml   CI (pipeline + 72 tests + check_site + HTML), build GHCR,
                              scan Trivy, contrôle quotidien des sources (build si publication)
 DEPLOYMENT.md    guide GitHub → GHCR → Unraid (DNS, HTTPS, mises à jour)
 ```
 
 Toutes les règles de la méthodologie et l'audit des sources sont documentés sur le site lui-même
 (page « Méthodologie ») et résumés dans les sections ci-dessous.
+
+## Données publiques (réutilisables)
+
+Les exports de `site/data/` sont servis tels quels et peuvent être consommés par d'autres outils
+(licence ouverte des sources) :
+
+| Fichier | Contenu | Clés utiles |
+|---|---|---|
+| `meta.json` | groupes (sigle, nom, couleur, membres, cohésion, participation), compteurs | `groupes[]`, `compteurs`, `data_built_at` |
+| `scrutins.json` | un enregistrement par scrutin | `u` uid, `n` n°, `d` date, `ti` titre, `th` thème, `t` type, `r` résultat, `m` marge, `p` positions (12 codes), `q` participations, `pv` groupes décisifs |
+| `agreement.json` | 66 paires précalculées | `principal`, `variantes`, `robustesse`, `mds` |
+| `questionnaire.json` | 54 textes essentiels (`v4`) | `families[]` : `label`, `theme`, `anchor` (vote de passage), `votes[]` enrichis (`ti`, `p`, `q`, `f`, `dir`) |
+
+Conventions : les tableaux sont indexés comme `meta.groupes` ; une position vaut `1` pour,
+`-1` contre, `0` abstention, `null` indéterminée ; les clés de paire sont `A|B` dans l'ordre
+canonique des groupes. Le code du site est sous licence MIT (voir [`LICENSE`](LICENSE)) ; les
+données restent sous les licences ouvertes de l'Assemblée nationale et du Sénat.
 
 ## Ce que publie le site
 
@@ -58,18 +75,19 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
   questionnaire, orientés vers leur adoption) et **vote de passage** de chaque texte (lecture
   directe). Les limites (orientation = inférence, méthode ≠ fond) sont documentées dans la
   méthodologie §8 et §11.
-- **Explorer les votes** : les 8 434 scrutins filtrables (thème, période, type, position d'un
-  groupe, recherche plein texte, texte essentiel), tri par serrage, badges « serré » et
-  « décisif » (marge et groupes dont le basculement change le résultat), export CSV, chacun relié
-  à sa page officielle.
-- **Derniers votes** : fil des 60 scrutins les plus récents, groupés par séance, avec résultat,
-  marge, groupes décisifs et position des douze groupes ; résumé des 30 derniers jours de séance
-  **partageable** ; badge « nouveau » et lien vers la question essentielle quand le vote en fait
-  partie (mémoire locale uniquement, rien n'est envoyé).
+- **Explorer les votes** : les 8 434 scrutins du plus récent au plus ancien, filtrables (thème,
+  période, type, position d'un groupe, recherche par titre ou numéro, texte essentiel), tri par
+  serrage, badges « serré », « décisif », « doublon », « question essentielle » ; export CSV, état
+  de filtres **partageable dans l'URL**, résumé des 30 derniers jours de séance partageable et
+  badge « nouveau » depuis votre dernière visite (mémoire locale uniquement, rien n'est envoyé).
 - **Questionnaire** : une question par texte de loi, générée depuis le titre officiel et agrégée
   sur tous ses votes ; **affinage vote par vote** possible pour chaque texte ; résultat
   **partageable** (bouton Partager natif / lien `?r=…`, vue allégée pour capture d'écran) et
   l'utilisateur voit les votes qui pèsent sur son résultat.
+- **Textes essentiels** : les 54 textes du questionnaire par thème, position des douze groupes sur
+  leur vote de passage, votes rattachés repliés, colonnes surlignables (`?a=RN&b=LFI-NFP`) ;
+  chaque sigle mène à la **fiche groupe** (`?g=RN`) — voisins classés, participation, cohésion et
+  position du groupe sur les 54 textes.
 - **Sur téléphone** : design responsive (testé jusqu'à 320 px), cibles tactiles ≥ 44 px, et
   **PWA installable** (« Ajouter à l'écran d'accueil ») avec consultation **hors-ligne** des
   dernières données ; image de partage dédiée (`og.png`) pour les réseaux.

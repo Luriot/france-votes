@@ -12,7 +12,7 @@ sont figées dans l'image au moment du build**. Rafraîchir les données = recon
 À chaque **push sur `main`** (et sur demande) :
 
 1. **test** : lance le pipeline complet (`python pipeline/run_all.py` — télécharge les sources
-   AN/Sénat, construit la base, régénère les exports), puis les 71 tests, `check_site.mjs`
+   AN/Sénat, construit la base, régénère les exports), puis les 72 tests, `check_site.mjs`
    (cohérence JS/exports) et `html-validate`.
 2. **build-and-push** (jamais sur les pull requests) : construit l'image Docker (le pipeline
    tourne dans le build), scanne l'image avec **Trivy** (échec si CVE CRITICAL/HIGH corrigeable),
@@ -116,6 +116,8 @@ data.senat.fr). Sans réseau, le build échoue — c'est volontaire, aucune donn
   en documentant la raison (comme dans BrunoFresh). `ignore-unfixed: true` est déjà actif :
   seules les CVE **corrigeables** font échouer le build.
 - **Ancienne version servie par le navigateur** : les assets du site sont versionnés `?v=N` ;
-  un rafraîchissement suffit. Côté données, `Cache-Control` est limité à 1 h.
+  un rafraîchissement suffit. Côté données, `Cache-Control` est limité à 1 h. Côté nginx :
+  js/css en 30 j (URL versionnées), images 7 j, pages HTML et données revalidées — après un
+  déploiement, un simple rechargement suffit à voir la nouvelle version.
 - **Le workflow planifié ne se déclenche pas** : les crons GitHub peuvent être retardés de
   quelques minutes ; vérifier l'onglet Actions.

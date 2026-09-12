@@ -90,6 +90,24 @@ const VV = (() => {
     return state;
   }
 
+  const QUESTIONNAIRE_VERSION = 4;
+
+  // Questionnaire enrichi (votes `ti/p/q/f`) : si une version antérieure vient du cache HTTP
+  // (max-age 1 h), on force une relecture réseau pour ne pas planter sur des champs absents.
+  async function loadQuestionnaire() {
+    let data = await loadJSON("questionnaire.json");
+    if (data.version !== QUESTIONNAIRE_VERSION) {
+      const res = await fetch(`data/questionnaire.json?v=${QUESTIONNAIRE_VERSION + 1}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`questionnaire.json: HTTP ${res.status}`);
+      data = await res.json();
+      if (data.version !== QUESTIONNAIRE_VERSION) {
+        throw new Error("questionnaire.json obsolète — rechargez la page.");
+      }
+      cache["questionnaire.json"] = data;
+    }
+    return data;
+  }
+
   async function loadRibbon() {
     const meta = await loadJSON("meta.json");
     state = { ...state, meta };
@@ -255,16 +273,61 @@ const VV = (() => {
     return `${s.d.slice(0, 4)}-${Number(s.d.slice(5, 7)) <= 6 ? "H1" : "H2"}`;
   }
 
+  // Recherche d'un scrutin : titre plein texte, ou numéro (« 8432 », « 43 » ou « #8432 »).
+  function matchesQuery(scrutin, query) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return true;
+    const digits = q.replace(/^#/, "");
+    if (/^\d+$/.test(digits) && Number.isInteger(scrutin.n) && scrutin.n > 0
+        && String(scrutin.n).includes(digits)) {
+      return true;
+    }
+    return String(scrutin.ti || "").toLowerCase().includes(q);
+  }
+
+  // Filtres de l'explorateur en paramètres d'URL, ordre stable (état partageable).
+  function voteQuery(filters = {}) {
+    const order = ["q", "theme", "periode", "type", "groupe", "position", "doublons", "essentiel", "tri"];
+    const params = new URLSearchParams();
+    for (const key of order) {
+      const value = filters[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") params.set(key, value);
+    }
+    return params.toString();
+  }
+
+  // Filtres de l'explorateur (valeurs vides = pas de filtre). `essentialUids` : Set ou null.
+  function filterScrutins(scrutins, filters = {}, essentialUids = null) {
+    const groups = state.meta.groupes.map((g) => g.sigle);
+    return scrutins.filter((s) => {
+      if (filters.theme && s.th !== filters.theme) return false;
+      if (filters.periode && period(s) !== filters.periode) return false;
+      if (filters.type && s.t !== filters.type) return false;
+      if (filters.doublons === "uniques" && s.b === 0) return false;
+      if (filters.doublons === "doublons" && s.b !== 0) return false;
+      if (filters.essentiel && essentialUids && !essentialUids.has(s.u)) return false;
+      if (filters.groupe) {
+        const index = groups.indexOf(filters.groupe);
+        if (filters.position) {
+          if (s.p[index] !== Number(filters.position)) return false;
+        } else if (s.p[index] === null) {
+          return false;
+        }
+      }
+      return matchesQuery(s, filters.q);
+    });
+  }
+
   function positionLabel(position) {
     return position === 1 ? "pour" : position === -1 ? "contre"
       : position === 0 ? "abstention" : "position non déterminée";
   }
 
-  // Une pastille de position — unique implémentation (explorateur, derniers votes, matrice).
+  // Une pastille de position — unique implémentation (explorateur, matrice).
   function positionChip(position, title, diverge = false) {
     const cls = position === 1 ? "pos-pour" : position === -1 ? "pos-contre"
       : position === 0 ? "pos-abstention" : "pos-absent";
-    return `<span class="pos-chip ${cls}${diverge ? " diverge" : ""}" title="${esc(title)}"></span>`;
+    return `<span class="pos-chip ${cls}${diverge ? " diverge" : ""}" role="img" aria-label="${esc(title)}" title="${esc(title)}"></span>`;
   }
 
   // Pastilles des 12 groupes (position de chaque groupe), en une ligne.
@@ -278,6 +341,24 @@ const VV = (() => {
   function essentielBadge(family) {
     if (!family) return "";
     return `<a class="badge neutre" href="questionnaire.html?affiner=${encodeURIComponent(family.id)}" title="Vote rattaché à un texte du questionnaire : voir la question essentielle">question essentielle</a>`;
+  }
+
+  // Profil léger d'un groupe à partir des exports précalculés (aucun recalcul sur les scrutins).
+  function groupProfile(agreement, sigle) {
+    const profile = state.meta.groupes.find((g) => g.sigle === sigle);
+    if (!profile) return null;
+    const others = state.meta.groupes
+      .filter((g) => g.sigle !== sigle)
+      .map((g) => ({ sigle: g.sigle, nom: g.nom, couleur: g.couleur, ...agreement.principal[pairKey(sigle, g.sigle)] }))
+      .filter((row) => row.accord !== null && row.accord !== undefined)
+      .sort((a, b) => b.accord - a.accord);
+    return { profile, others };
+  }
+
+  // Sigles valides et uniques parmi des paramètres d'URL (`?a=`, `?b=`) pour surligner des colonnes.
+  function highlightSigs(...candidates) {
+    const sigles = state.meta.groupes.map((g) => g.sigle);
+    return [...new Set(candidates.filter((value) => sigles.includes(value)))];
   }
 
   // Positions des 12 groupes sur une famille de questions essentielles :
@@ -349,10 +430,11 @@ const VV = (() => {
   }
 
   return {
-    loadJSON, loadAll, loadRibbon, get state() { return state; },
+    loadJSON, loadAll, loadRibbon, loadQuestionnaire, get state() { return state; },
     fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, kappa, heatColor, textOn,
     stance, esc, safeColor, period, setText, renderRibbon, initSignature, positionChips, positionChip,
-    positionLabel, essentielBadge, familyStances,
+    positionLabel, essentielBadge, familyStances, matchesQuery, voteQuery, filterScrutins, groupProfile,
+    highlightSigs,
     encodeAnswers, decodeAnswers, share,
   };
 })();

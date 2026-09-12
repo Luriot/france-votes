@@ -32,14 +32,13 @@
   // Questions essentielles (questionnaire) : périmètre orienté vers l'adoption des textes.
   // Chaque vote de famille est ramené sur l'axe « pour/contre le texte » (dir ±1) ; la
   // déduplication du corpus ne s'applique pas (b := 1), comme dans le questionnaire.
-  const questions = await VV.loadJSON("questionnaire.json");
+  const questions = await VV.loadQuestionnaire();
   const familyOfUid = new Map();
   const anchorUids = new Set();
   for (const fam of questions.families) {
     for (const vote of fam.votes) familyOfUid.set(vote.u, { fam, vote });
     if (fam.anchor && fam.votes.some((vote) => vote.u === fam.anchor)) anchorUids.add(fam.anchor);
   }
-  const scrutinsByUid = new Map(state.scrutins.map((s) => [s.u, s]));
   const essentialScrutins = [];
   for (const s of state.scrutins) {
     const hit = familyOfUid.get(s.u);
@@ -134,39 +133,27 @@
     const pairs = VV.allPairs(state.scrutins, weightOpts());
     grid.innerHTML = groupes.map((g, gi) => {
       const determined = state.scrutins.filter((s) => s.p[gi] !== null);
-      const participation = determined.length
-        ? determined.reduce((acc, s) => acc + s.q[gi], 0) / determined.length
-        : 0;
       const others = sigles
         .filter((sigle) => sigle !== g.sigle)
         .map((sigle) => ({ sigle, ...pairs[VV.pairKey(g.sigle, sigle)] }))
         .filter((x) => x.accord !== null)
         .sort((a, b) => b.accord - a.accord);
       const top = others[0], low = others[others.length - 1];
-      return `<button type="button" class="group-card" data-sigle="${VV.esc(g.sigle)}">
+      return `<a class="group-card" href="groupe.html?g=${encodeURIComponent(g.sigle)}"
+        title="Voir la fiche de ${VV.esc(g.sigle)}">
         <span class="sigle">${VV.esc(g.sigle)}</span>
         <span class="nom">${VV.esc(g.nom)}</span>
         <span class="swatch" style="background:${VV.safeColor(g.couleur)}"></span>
         <dl>
           <dt>scrutins comptés</dt><dd>${VV.fmtNum(determined.length)}</dd>
-          <dt>participation</dt><dd>${VV.fmtPct(participation)}</dd>
+          <dt>participation</dt><dd>${VV.fmtPct(g.participation)}</dd>
           <dt>membres</dt><dd>${g.membres ?? "–"}</dd>
           <dt>unité (Rice)</dt><dd>${g.cohesion === null || g.cohesion === undefined ? "–" : `${g.cohesion.toFixed(1).replace(".", ",")} %`}</dd>
           <dt>plus proche</dt><dd>${VV.esc(top?.sigle ?? "–")} · ${VV.fmtPct(top?.accord)}</dd>
           <dt>plus distant</dt><dd>${VV.esc(low?.sigle ?? "–")} · ${VV.fmtPct(low?.accord)}</dd>
         </dl>
-      </button>`;
+      </a>`;
     }).join("");
-    grid.querySelectorAll(".group-card").forEach((btn) => btn.addEventListener("click", () => {
-      refGroup = btn.dataset.sigle;
-      selected.a = refGroup;
-      if (selected.b === refGroup) selected.b = sigles.find((s) => s !== refGroup);
-      renderAll();
-      const title = document.getElementById("ranking-title");
-      title.setAttribute("tabindex", "-1");
-      title.focus({ preventScroll: true });
-      document.getElementById("comparer").scrollIntoView({ behavior: "smooth", block: "start" });
-    }));
   }
 
   /* --- classement de proximité --- */
@@ -272,47 +259,20 @@
     table.append(tbody);
   }
 
-  /* --- positions sur les questions essentielles (vote de passage) --- */
-
-  function renderStances() {
-    const table = document.getElementById("stances");
-    if (!table) return;
-    const theme = selTheme.value;
-    // Un thème de texte = celui de son vote de passage (les motions sont « Non classé »,
-    // comme dans l'explorateur), pas le libellé interne de la famille.
-    const themeOf = (fam) => scrutinsByUid.get(fam.anchor)?.th ?? fam.theme;
-    const fams = questions.families
-      .filter((fam) => theme === "" || themeOf(fam) === theme)
-      .slice()
-      .sort((a, b) => themeOf(a).localeCompare(themeOf(b), "fr") || String(a.dates[0]).localeCompare(String(b.dates[0])));
-    const header = `<thead><tr><th scope="col">Texte</th>${groupes
-      .map((g) => `<th scope="col" title="${VV.esc(g.nom)}">${VV.esc(g.sigle)}</th>`).join("")}</tr></thead>`;
-    const rows = [];
-    let currentTheme = null;
-    for (const fam of fams) {
-      const famTheme = themeOf(fam);
-      if (theme === "" && famTheme !== currentTheme) {
-        currentTheme = famTheme;
-        rows.push(`<tr class="theme-row"><th colspan="${groupes.length + 1}">${VV.esc(famTheme)}</th></tr>`);
-      }
-      const stances = VV.familyStances(fam, scrutinsByUid);
-      const cells = groupes.map((g, i) => {
-        let title = `${g.sigle} : ${VV.positionLabel(stances.passage[i])} (vote de passage)`;
-        if (stances.divergences[i]) {
-          const majorite = stances.partagee[i] ? "partagée (égalité)" : VV.positionLabel(stances.majorite[i]);
-          title += ` — position pondérée par la participation sur les ${fam.votes.length} votes du texte : ${majorite} (peut refléter un désaccord de méthode)`;
-        }
-        return `<td class="stance-cell">${VV.positionChip(stances.passage[i], title, stances.divergences[i])}</td>`;
-      }).join("");
-      const anchor = scrutinsByUid.get(fam.anchor);
-      rows.push(`<tr>
-        <th scope="row" class="stance-label">
-          <a href="questionnaire.html?affiner=${encodeURIComponent(fam.id)}">${VV.esc(fam.label)}</a>
-          <span class="date">${VV.fmtDate(anchor?.d ?? fam.dates[0])}</span>
-        </th>${cells}</tr>`);
-    }
-    const empty = `<tr><td colspan="${groupes.length + 1}">Aucun texte essentiel pour ce thème sélectionné.</td></tr>`;
-    table.innerHTML = `${header}<tbody>${rows.length ? rows.join("") : empty}</tbody>`;
+  /* --- derniers votes (accueil) --- */
+  function renderRecent() {
+    const box = document.getElementById("derniers-accueil");
+    if (!box) return;
+    const rows = [...state.scrutins].sort((a, b) => b.n - a.n).slice(0, 3);
+    box.innerHTML = `<ul class="impact">${rows.map((s) => `<li>
+      <div class="meta">
+        <span class="date">${VV.fmtDate(s.d)}</span>
+        <span class="badge theme">${VV.esc(s.th)}</span>
+        <span class="badge ${s.r === "adopté" ? "adopte" : "rejete"}">${VV.esc(s.r || "–")}</span>
+      </div>
+      <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
+    </li>`).join("")}</ul>
+    <p class="fineprint"><a href="votes.html">Tous les scrutins, filtrables →</a></p>`;
   }
 
   /* --- carte MDS --- */
@@ -568,7 +528,6 @@
     renderRanking();
     renderPair();
     showNeighbours(selected.a);
-    renderStances();
     renderPerimetreNote();
     syncUrl();
   }
@@ -591,6 +550,7 @@
 
   renderAll();
   renderGroups();
+  renderRecent();
   renderMap();
 })().catch((err) => {
   document.getElementById("pair-panel").innerHTML = `<p class="erreur">Erreur de chargement : ${VV.esc(err.message)}</p>`;

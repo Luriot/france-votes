@@ -10,15 +10,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Votes 2027">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; object-src 'none'">
-  <title>Derniers votes — Votes 2027</title>
-  <meta name="description" content="Les scrutins les plus récents de l'Assemblée nationale : résultat, marge, groupes décisifs et position de chaque groupe. Mis à jour dès qu'un vote est publié.">
+  <title>Fiche groupe — Votes 2027</title>
+  <meta name="description" content="Fiche d'un groupe politique de l'Assemblée nationale : voisins, participation, cohésion et position sur les textes essentiels.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Derniers votes — Votes 2027">
-  <meta property="og:description" content="Les scrutins les plus récents de l'Assemblée nationale : résultat, marge, groupes décisifs et position de chaque groupe.">
+  <meta property="og:title" content="Fiche groupe — Votes 2027">
+  <meta property="og:description" content="Voisins, participation, cohésion et position sur les textes essentiels.">
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=22">
+  <link rel="stylesheet" href="assets/style.css?v=24">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -29,7 +29,7 @@
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
         <a href="votes.html">Votes</a>
-        <a href="derniers.html" aria-current="page">Derniers</a>
+        <a href="textes.html">Textes</a>
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html">Méthode</a>
       </nav>
@@ -49,38 +49,24 @@
 </header>
 
 <main id="contenu" class="wrap">
-  <h1>Derniers votes</h1>
-  <p>Les scrutins publics les plus récents de l'Assemblée nationale, du plus récent au plus ancien.
-  La page suit les publications officielles : le pipeline contrôle les sources chaque jour et ne
-  reconstruit les données que si l'Assemblée a publié.</p>
+  <h1 id="g-titre">Fiche groupe</h1>
+  <p>Ce que ce groupe vote, avec qui il vote pareil, et où il se situe sur les textes essentiels.
+  Un groupe résume des députés qui peuvent voter différemment ; une fiche n'est pas un programme.</p>
+  <div class="ref-chips" id="g-chips" role="group" aria-label="Changer de groupe"></div>
 
-  <div class="card" id="resume" aria-live="polite">Chargement…</div>
-
-  <p class="banner-neuf" id="nouveautes" hidden></p>
-
-  <div class="card">
-    <h2>Le fil des scrutins</h2>
-    <div id="flux">Chargement…</div>
-    <p class="filters-result" id="flux-note"></p>
-  </div>
-
-  <details class="aide">
-    <summary>Comment lire les pastilles de position ?</summary>
-    <p>Douze pastilles, dans l'ordre des groupes : <strong>RN, EPR, LFI-NFP, SOC, DR, ECOS, DEM,
-    HOR, LIOT, GDR, UDR, NI</strong>. Vert = pour, rouge = contre, ocre = abstention, gris clair =
-    position non déterminée (groupe absent ou sans majorité sur ce vote). Survolez une pastille pour
-    voir le détail. Le badge « serré » signale un écart à la majorité d'au plus 10 voix ; « décisif »
-    un groupe dont le basculement changerait à lui seul le résultat.</p>
-  </details>
+  <div class="card" id="g-carte" aria-live="polite">Chargement…</div>
+  <div class="card" id="g-rang" aria-live="polite"></div>
+  <div class="card" id="g-textes" aria-live="polite"></div>
 </main>
 
 <footer class="site">
   <div class="wrap">
-    <p>Données : open data de l'Assemblée nationale (licence ouverte). Chaque titre renvoie à
-    l'analyse officielle du scrutin.</p>
+    <p>Données : open data de l'Assemblée nationale (licence ouverte) ; thèmes officiels du Sénat.
+    Les accords proviennent du calcul principal (tous les votes), détaillé dans la
+    <a href="methodologie.html">méthodologie</a>.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=22"></script>
-<script src="assets/derniers.js?v=22"></script>
+<script src="assets/app.js?v=24"></script>
+<script src="assets/groupe.js?v=24"></script>
 </body>
 </html>

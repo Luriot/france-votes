@@ -76,7 +76,7 @@ const themes = new Set(VV.state.scrutins.map((s) => s.th));
 check("thèmes exportés non vides", themes.size >= 20, `${themes.size} thèmes`);
 
 const q = JSON.parse(files["questionnaire.json"]);
-check("questionnaire v3 : familles essentielles", q.version === 3 && q.families.length >= 20, `${q.families?.length} familles`);
+check("questionnaire v4 : familles essentielles", q.version === 4 && q.families.length >= 20, `${q.families?.length} familles`);
 check("familles : votes existants dans scrutins.json",
   q.families.every((f) => f.votes.every((v) => scrutinsByUid.has(v.u))));
 check("familles : directions ±1", q.families.every((f) => f.votes.every((v) => v.dir === 1 || v.dir === -1)));
@@ -152,6 +152,18 @@ check("motions : recodage aligné sur les positions canoniques",
     const s = scrutinsByUid.get(f.anchor);
     return f.votes[0].p.every((v, i) => (s.p[i] === 1 ? v === 1 : v === -1));
   }));
+const voteCodes = new Set([1, 0, -1, null]);
+check("familles : votes enrichis (ti, p, q, f)",
+  q.families.every((f) => f.votes.every((v) =>
+    typeof v.ti === "string" && v.ti.length > 0
+    && Array.isArray(v.p) && v.p.length === 12 && v.p.every((x) => voteCodes.has(x))
+    && Array.isArray(v.q) && v.q.length === 12 && v.q.every((x) => typeof x === "number" && x >= 0 && x <= 1)
+    && typeof v.f === "number" && v.f >= 0 && v.f <= 1)));
+check("familles : positions alignées sur scrutins.json (hors motions)",
+  q.families.filter((f) => f.kind !== "motion de censure").every((f) => f.votes.every((v) => {
+    const s = scrutinsByUid.get(v.u);
+    return Boolean(s) && v.p.every((x, i) => x === s.p[i]);
+  })));
 const stanceDivergences = famStances.reduce((n, s) => n + s.divergences.filter(Boolean).length, 0);
 console.log(`INFO positions essentielles : ${stanceDivergences} divergence(s) passage/majorité sur ${q.families.length} familles`);
 
@@ -172,12 +184,65 @@ const emptyStances = VV.familyStances({ id: "vide", anchor: "ZZ", votes: [] }, n
 check("familyStances : famille vide → aucun exception, tout indéterminé",
   emptyStances.passage.every((p) => p === null) && emptyStances.majorite.every((p) => p === null));
 
+// Recherche et filtres de l'explorateur (helpers purs, état partageable).
+check("matchesQuery : numéro (#), partiel, titre, sentinelle inerte",
+  VV.matchesQuery({ n: 8432, ti: "la motion de rejet préalable" }, "8432")
+  && VV.matchesQuery({ n: 8432, ti: "la motion de rejet préalable" }, "#8432")
+  && VV.matchesQuery({ n: 8432, ti: "la motion de rejet préalable" }, "43")
+  && !VV.matchesQuery({ n: 8432, ti: "projet de loi logement" }, "#99")
+  && VV.matchesQuery({ n: 8432, ti: "projet de loi logement" }, "LOGEMENT")
+  && !VV.matchesQuery({ n: 8432, ti: "projet de loi logement" }, "budget")
+  && !VV.matchesQuery({ n: null, ti: "l'ensemble du texte" }, "1"));
+const pad12 = (values) => [...values, ...new Array(Math.max(0, 12 - values.length)).fill(null)];
+const fakeRows = [
+  { u: "a", n: 8432, d: "2025-06-01", ti: "projet de loi logement", th: "Logement et urbanisme", t: "SPO", b: 1, m: 40, p: pad12([1]) },
+  { u: "b", n: 8433, d: "2025-12-01", ti: "projet de loi budget", th: "Budget", t: "SPS", b: 0, m: 5, p: pad12([null, -1]) },
+];
+check("filterScrutins : thème, type, doublons",
+  VV.filterScrutins(fakeRows, { theme: "Budget" }).length === 1
+  && VV.filterScrutins(fakeRows, { type: "SPO" })[0].u === "a"
+  && VV.filterScrutins(fakeRows, { doublons: "uniques" })[0].u === "a"
+  && VV.filterScrutins(fakeRows, { doublons: "doublons" })[0].u === "b");
+check("filterScrutins : essentiel, recherche par n°, position d'un groupe",
+  VV.filterScrutins(fakeRows, { essentiel: "essentiel" }, new Set(["b"]))[0].u === "b"
+  && VV.filterScrutins(fakeRows, { q: "8432" })[0].u === "a"
+  && VV.filterScrutins(fakeRows, { groupe: "RN", position: "1" }).length === 1
+  && VV.filterScrutins(fakeRows, { groupe: "RN", position: "1" })[0].u === "a");
+check("filterScrutins : groupe sans position = positions déterminées",
+  VV.filterScrutins(fakeRows, { groupe: "RN" }).length === 1
+  && VV.filterScrutins(fakeRows, { groupe: "RN" })[0].u === "a"
+  && VV.filterScrutins(fakeRows, { groupe: "EPR" })[0].u === "b"
+  && VV.filterScrutins(fakeRows, { groupe: "RN", position: "x" }).length === 0);
+check("voteQuery : ordre stable, valeurs vides ignorées, zéro conservé",
+  VV.voteQuery({ theme: "Budget", q: "8432", tri: "" }) === "q=8432&theme=Budget"
+  && VV.voteQuery({ position: 0 }) === "position=0"
+  && VV.voteQuery({}) === "");
+check("highlightSigs : sigles valides et uniques",
+  VV.highlightSigs("RN", "RN").join(",") === "RN"
+  && VV.highlightSigs("foo", null, "ECOS").join(",") === "ECOS"
+  && VV.highlightSigs(undefined).length === 0);
+
+// Profil de groupe (fiche légère : agreement.json + meta.json).
+const groupRN = VV.groupProfile(VV.state.agreement, "RN");
+check("groupProfile : 11 voisins classés, kappa présent",
+  Boolean(groupRN) && groupRN.profile.sigle === "RN" && groupRN.others.length === 11
+  && groupRN.others.every((x, i, list) => i === 0 || list[i - 1].accord >= x.accord)
+  && groupRN.others.every((x) => typeof x.kappa === "number" && Number.isFinite(x.kappa)));
+check("groupProfile : groupe inconnu → null", VV.groupProfile(VV.state.agreement, "XX") === null);
+const partialProfile = VV.groupProfile({ principal: { [VV.pairKey("RN", "EPR")]: { accord: null } } }, "RN");
+check("groupProfile : paires absentes ou nulles ignorées", partialProfile.others.length === 0);
+const noPairsProfile = VV.groupProfile({ principal: {} }, "RN");
+check("groupProfile : aucune paire → liste vide, pas d'exception", noPairsProfile.others.length === 0);
+check("meta : participation par groupe disponible (nombre ou null)",
+  VV.state.meta.groupes.every((g) => g.participation === null
+    || (typeof g.participation === "number" && g.participation >= 0 && g.participation <= 1)));
+
 // Garde-fous de contrat : les pages consomment les clés réellement exportées…
 const questionnaireSrc = await readFile(new URL("../site/assets/questionnaire.js", import.meta.url), "utf8");
 check("questionnaire.js n'utilise pas la clé inexistante 'q.n'", !/\bq\.n\b/.test(questionnaireSrc));
 
-// …et le versionnage des assets reste identique sur les 5 pages (sinon cache servi périmé).
-const pages = ["index.html", "votes.html", "derniers.html", "questionnaire.html", "methodologie.html"];
+// …et le versionnage des assets reste identique sur les pages (sinon cache servi périmé).
+const pages = ["index.html", "votes.html", "textes.html", "groupe.html", "questionnaire.html", "methodologie.html"];
 const versions = new Map();
 for (const page of pages) {
   const html = await readFile(new URL(`../site/${page}`, import.meta.url), "utf8");

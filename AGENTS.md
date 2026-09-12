@@ -8,9 +8,9 @@
   `site/data/*.json` (~2 min ; saute les étapes 2-3 seulement si sources **et code** inchangés,
   empreintes enregistrées dans le marqueur, et exports au moins aussi récents que la base) ;
   écrit `data/derniere_execution.json` (gitignoré).
-- `python -m unittest discover -s pipeline/tests` — 71 tests ; nécessitent la base et les exports.
+- `python -m unittest discover -s pipeline/tests` — 72 tests ; nécessitent la base et les exports.
 - `node pipeline/check_site.mjs` — vérifie le JS contre les exports (66/66 accords, kappa,
-  `?v=N` identique sur les 5 pages, clés lues par le questionnaire) ; à lancer après toute
+  `?v=N` identique sur les 6 pages, clés lues par le questionnaire) ; à lancer après toute
   modification de `score.py` ou de `site/assets/*.js`.
 - `python -m http.server 8000 --directory site` — servir le site ; ne pas ouvrir en `file://`
   (les `fetch` des JSON échouent).
@@ -29,6 +29,9 @@
 
 - `site/data/` est généré et gitignoré : un clone frais exige `python pipeline/run_all.py`
   avant de servir le site.
+- Pages légères : `questionnaire.html` (meta + questionnaire.json), `textes.html` (idem) et
+  `groupe.html` (meta + agreement.json + questionnaire.json) ne chargent **pas** `scrutins.json`
+  (~3,9 Mo) ; ne pas les faire en dépendre. `compare.js` et `votes.js` le chargent seuls.
 - Après toute modification de `build_db.py` ou `score.py` : relancer `run_all.py`, puis tests +
   `check_site.mjs` (les exports JSON sont la source des tests d'intégration).
 - Ordre canonique des groupes défini une seule fois (`pipeline/build_db.py`, `CANON_GROUPS`) et
@@ -59,13 +62,14 @@
   le défilement infini — ne pas dupliquer les ids dans le HTML.
 - Toute donnée injectée dans le DOM passe par `VV.esc()` ; couleurs par `VV.safeColor()` (hex
   uniquement) ; jamais de `innerHTML` avec une valeur brute.
-- Après toute modification de `site/assets/*.js|css`, incrémenter `?v=N` dans les 5 pages HTML
+- Après toute modification de `site/assets/*.js|css`, incrémenter `?v=N` dans les 6 pages HTML
   (sinon le navigateur sert l'ancien fichier depuis son cache).
 - Pastilles de position : `VV.positionChips()` / `VV.positionChip()` (`app.js`) est l'unique
-  implémentation (explorateur, derniers votes, matrice) ; badge « question essentielle » via
-  `VV.essentielBadge()`. Page `derniers.html` : la mémoire « déjà vu » est locale
-  (`localStorage vv-derniers-vus`, n° de scrutin max), jamais transmise ; le résumé porte sur les
-  30 derniers jours de séance calés sur le dernier scrutin, pas sur la date du jour.
+  implémentation (explorateur, matrice) ; badge « question essentielle » via `VV.essentielBadge()`.
+  Filtres de l'explorateur : unique implémentation dans `VV.filterScrutins()`/`VV.matchesQuery()`
+  (`votes.js` n'a que l'état d'interface) ; état partageable via `VV.voteQuery()`. Mémoire de
+  visite locale (`localStorage vv-votes-vus`, n° de scrutin max), jamais transmise ; le résumé de
+  séance porte sur les 30 derniers jours calés sur le dernier scrutin, pas sur la date du jour.
 - PWA : `manifest.webmanifest` + `service-worker.js` (icônes dans `site/assets/`). Si la liste
   `SHELL` du SW change, incrémenter `VERSION` dedans ; les assets versionnés `?v=N` s'invalident
   seuls.

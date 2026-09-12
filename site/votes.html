@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=22">
+  <link rel="stylesheet" href="assets/style.css?v=24">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -29,7 +29,7 @@
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
         <a href="votes.html" aria-current="page">Votes</a>
-        <a href="derniers.html">Derniers</a>
+        <a href="textes.html">Textes</a>
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html">Méthode</a>
       </nav>
@@ -50,13 +50,17 @@
 
 <main id="contenu" class="wrap">
   <h1>Explorer les votes</h1>
-  <p>Tous les scrutins publics de la XVII<sup>e</sup> législature, sans sélection éditoriale. Chaque
-  ligne renvoie à l'analyse officielle de l'Assemblée nationale.</p>
+  <p>Tous les scrutins publics de la XVII<sup>e</sup> législature, sans sélection éditoriale, du plus
+  récent au plus ancien. Chaque ligne renvoie à l'analyse officielle de l'Assemblée nationale.</p>
+
+  <div class="card" id="resume" aria-live="polite">Chargement…</div>
+
+  <p class="banner-neuf" id="nouveautes" hidden></p>
 
   <div class="controls">
     <div class="field">
       <label for="f-recherche">Recherche dans le titre</label>
-      <input type="search" id="f-recherche" placeholder="ex. finances 2026, logement…" autocomplete="off">
+      <input type="search" id="f-recherche" placeholder="ex. finances 2026, logement, 8432…" autocomplete="off">
     </div>
     <div class="field">
       <label for="f-theme">Thème</label>
@@ -145,7 +149,7 @@
     pointent vers l'analyse nominative complète de chaque scrutin.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=22"></script>
-<script src="assets/votes.js?v=22"></script>
+<script src="assets/app.js?v=24"></script>
+<script src="assets/votes.js?v=24"></script>
 </body>
 </html>

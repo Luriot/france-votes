@@ -2,12 +2,10 @@
    avec affinage vote par vote possible pour chaque texte. */
 
 (async () => {
-  const state = await VV.loadAll();
-  VV.renderRibbon();
-  const data = await VV.loadJSON("questionnaire.json");
-  const groupes = state.meta.groupes;
+  const meta = await VV.loadRibbon();
+  const data = await VV.loadQuestionnaire();
+  const groupes = meta.groupes;
   const families = data.families ?? [];
-  const byUid = new Map(state.scrutins.map((s) => [s.u, s]));
   const familyOfUid = new Map();
   for (const fam of families) for (const vote of fam.votes) familyOfUid.set(vote.u, fam);
 
@@ -82,8 +80,7 @@
     const years = [...new Set(fam.dates.map((d) => d.slice(0, 4)))].join("–");
     const shown = fam.votes.slice(0, 12);
     const votelist = shown.map((vote) => {
-      const s = byUid.get(vote.u);
-      const titre = s ? s.ti : `scrutin n° ${vote.n}`;
+      const titre = vote.ti || `scrutin n° ${vote.n}`;
       return `<li><a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(vote.n) || 0}" target="_blank" rel="noopener">${VV.esc(titre)}</a> <span class="date">${VV.fmtDate(vote.d)}</span></li>`;
     }).join("") + (fam.votes.length > shown.length
       ? `<li class="fineprint">… et ${fam.votes.length - shown.length} autre${fam.votes.length - shown.length > 1 ? "s" : ""} vote${fam.votes.length - shown.length > 1 ? "s" : ""} du même texte (tous pris en compte)</li>` : "");
@@ -109,9 +106,8 @@
       </section>`).join("");
   }
 
-  function detailedCard(uid) {
-    const s = byUid.get(uid);
-    if (!s) return "";
+  function detailedCard(vote) {
+    const uid = vote.u;
     const eff = effective(uid);
     const fam = familyOfUid.get(uid);
     const inherited = eff && eff.source === "herite"
@@ -119,11 +115,11 @@
     const reset = fam && directAnswer(uid) !== undefined
       ? `<button type="button" class="ghost reset-uid" data-uid="${VV.esc(uid)}">Revenir à la réponse du texte</button>` : "";
     return `<article class="q-item" id="q-${VV.esc(uid)}">
-      <p class="q-meta"><span class="badge theme">${VV.esc(s.th)}</span>
-        <span class="badge neutre">${VV.fmtDate(s.d)}</span> ${inherited}</p>
-      <h3>${VV.esc(s.ti)}</h3>
-      <p class="fineprint">Scrutin n° ${Number(s.n) || 0} ·
-        <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">source officielle</a></p>
+      <p class="q-meta"><span class="badge theme">${VV.esc(fam?.theme ?? "")}</span>
+        <span class="badge neutre">${VV.fmtDate(vote.d)}</span> ${inherited}</p>
+      <h3>${VV.esc(vote.ti || `Scrutin n° ${Number(vote.n) || 0}`)}</h3>
+      <p class="fineprint">Scrutin n° ${Number(vote.n) || 0} ·
+        <a href="${VV.sourceUrl(vote)}" target="_blank" rel="noopener">source officielle</a></p>
       ${answerButtons({ uid, allowAbstention: true })}
       ${reset}
     </article>`;
@@ -131,10 +127,8 @@
 
   const FOCUS_LIMIT = 25;
   const voteWeight = (vote) => {
-    const s = byUid.get(vote.u);
-    if (!s) return 0;
-    const parts = s.q.length ? s.q.reduce((acc, value) => acc + value, 0) / s.q.length : 0;
-    return s.f * parts;
+    const parts = vote.q.length ? vote.q.reduce((acc, value) => acc + value, 0) / vote.q.length : 0;
+    return vote.f * parts;
   };
 
   function renderFocus() {
@@ -148,7 +142,7 @@
       <h2>${VV.esc(focus.label)}</h2>
       <p class="fineprint">Vos réponses vote par vote remplacent la réponse donnée sur le texte.
       ${hidden > 0 ? `Les ${FOCUS_LIMIT} votes les plus significatifs sont affichés ci-dessous ; les ${hidden} autres comptent via votre réponse de texte.` : ""}</p>
-      ${shown.map((vote) => detailedCard(vote.u)).join("")}
+      ${shown.map((vote) => detailedCard(vote)).join("")}
       <button type="button" class="ghost" id="exit-focus">← Revenir à toutes les questions</button>
     </section>`;
   }
@@ -204,12 +198,10 @@
           const direct = directAnswer(vote.u);
           const value = direct !== undefined ? direct : inherited;
           if (value === undefined) continue;
-          const s = byUid.get(vote.u);
-          if (!s) continue;
-          const raw = vote.p ? vote.p[gi] : s.p[gi];
+          const raw = vote.p[gi];
           if (raw === null || raw === undefined) continue;
           const gp = vote.dir === 1 ? raw : -raw;
-          items.push({ s, label: fam.label, w: s.f * s.q[gi], agree: gp === value });
+          items.push({ label: fam.label, w: vote.f * vote.q[gi], agree: gp === value });
         }
         const total = items.reduce((acc, item) => acc + item.w, 0);
         if (!items.length || total <= 0) continue;
@@ -238,7 +230,9 @@
         <span class="stance" style="border-color:${VV.safeColor(g.couleur)};color:var(--ink)">${VV.esc(g.sigle)}</span>
         <span class="bar"><i style="width:${(g.accord * 100).toFixed(1)}%;background:${VV.safeColor(g.couleur)}"></i></span>
         <b>${VV.fmtPct(g.accord)}</b></div>`).join("")}
-      <p class="q-actions"><button type="button" class="primary" id="partager">Partager ce résultat</button></p>
+      <p class="q-actions"><button type="button" class="primary" id="partager">Partager ce résultat</button>
+      <a href="textes.html?a=${encodeURIComponent(best.sigle)}">Voir les ${families.length} textes →</a>
+      <a href="index.html?perimetre=essentiel&a=${encodeURIComponent(best.sigle)}">Comparer sur ces textes →</a></p>
       <details class="aide"><summary>Pourquoi ${VV.esc(best.sigle)} arrive en tête ? (votes qui ont le plus pesé)</summary>
         <h3>Votes où vous êtes d'accord avec ${VV.esc(best.sigle)}</h3>
         <ul>${topDrivers(true).map((d) => `<li>${VV.esc(d.label)} <span class="date">(poids ${d.w.toFixed(2)})</span></li>`).join("") || "<li>Aucun</li>"}</ul>

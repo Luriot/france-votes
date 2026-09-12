@@ -2,14 +2,15 @@
    Après une modification d'asset : incrémenter ?v=N dans les pages (les URL changent)
    et, si la liste SHELL change, incrémenter VERSION ici. */
 
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL_CACHE = `fv-shell-${VERSION}`;
 const DATA_CACHE = `fv-data-${VERSION}`;
 const SHELL = [
   "./",
   "./index.html",
   "./votes.html",
-  "./derniers.html",
+  "./textes.html",
+  "./groupe.html",
   "./questionnaire.html",
   "./methodologie.html",
   "./manifest.webmanifest",
@@ -64,7 +65,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigations : réseau d'abord (et mise en cache), puis page en cache, puis coquille.
+  // Navigations : réseau d'abord (et mise en cache), puis page en cache (en ignorant la query :
+  // `groupe.html?g=X` doit retrouver `groupe.html` pré-cachée), puis coquille.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -73,7 +75,8 @@ self.addEventListener("fetch", (event) => {
           caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request).then((hit) => hit || caches.match("./index.html"))),
+        .catch(() => caches.match(request, { ignoreSearch: true })
+          .then((hit) => hit || caches.match("./index.html"))),
     );
     return;
   }

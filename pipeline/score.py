@@ -111,6 +111,15 @@ def group_traits(conn: sqlite3.Connection) -> dict[str, dict]:
     return traits
 
 
+def group_participations(scrutins: list[dict]) -> dict[str, float | None]:
+    """Participation moyenne par groupe sur les scrutins où sa position est déterminée."""
+    participations: dict[str, float | None] = {}
+    for sigle in SIGLES:
+        values = [s["parts"].get(sigle, 0.0) for s in scrutins if s["positions"].get(sigle) is not None]
+        participations[sigle] = round(sum(values) / len(values), 4) if values else None
+    return participations
+
+
 def deduplicate(scrutins: list[dict]) -> None:
     seen: dict[tuple, str] = {}
     for s in scrutins:
@@ -455,7 +464,10 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
                 "dates": [s["date"]],
                 "anchor": s["uid"],
                 "votes": [{"u": s["uid"], "n": s["numero"], "d": s["date"], "dir": 1,
-                           "p": [POS_CODE[value] for value in recoded]}],
+                           "ti": s["titre"],
+                           "p": [POS_CODE[value] for value in recoded],
+                           "q": [round(s["parts"].get(sigle, 0.0), 4) for sigle in SIGLES],
+                           "f": round(s["facteur_theme"], 6)}],
                 "entropies": [_entropy(recoded)],
             }
             continue
@@ -494,7 +506,13 @@ def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dic
             if vector in vectors:
                 continue
             vectors.add(vector)
-            votes.append({"u": s["uid"], "n": s["numero"], "d": s["date"], "dir": direction})
+            votes.append({
+                "u": s["uid"], "n": s["numero"], "d": s["date"], "dir": direction,
+                "ti": s["titre"],
+                "p": [POS_CODE[s["positions"].get(sigle)] for sigle in SIGLES],
+                "q": [round(s["parts"].get(sigle, 0.0), 4) for sigle in SIGLES],
+                "f": round(s["facteur_theme"], 6),
+            })
         if not votes:
             continue
         entropies = [_entropy([p for p in passage["positions"].values() if p is not None])
@@ -594,6 +612,8 @@ def main() -> int:
         }
         scrutin_export.append(scrutins_row)
 
+    participations = group_participations(scrutins)
+
     meta = {
         "version": "1.0",
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -609,7 +629,8 @@ def main() -> int:
         },
         "groupes": [{"sigle": s, "nom": nom, "couleur": GROUP_COLORS[i], "refs": [r],
                      "membres": traits.get(s, {}).get("membres"),
-                     "cohesion": traits.get(s, {}).get("cohesion")}
+                     "cohesion": traits.get(s, {}).get("cohesion"),
+                     "participation": participations.get(s)}
                     for i, (r, s, nom) in enumerate(CANON_GROUPS)],
     }
 
@@ -624,7 +645,7 @@ def main() -> int:
             "mds": coords,
         },
         "questionnaire.json": {
-            "version": 3,
+            "version": 4,
             "families": questionnaire_families(scrutins),
         },
     }

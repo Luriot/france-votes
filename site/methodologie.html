@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=22">
+  <link rel="stylesheet" href="assets/style.css?v=24">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -29,7 +29,7 @@
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
         <a href="votes.html">Votes</a>
-        <a href="derniers.html">Derniers</a>
+        <a href="textes.html">Textes</a>
         <a href="questionnaire.html">Questionnaire</a>
         <a href="methodologie.html" aria-current="page">Méthode</a>
       </nav>
@@ -307,7 +307,10 @@
     servi à orienter ses votes. Le comparateur réutilise cette couche : la position sur le vote de
     passage (lecture directe, sans inférence) et, pour la matrice des textes essentiels, la position
     majoritaire pondérée par la participation sur l'ensemble des votes orientés de la famille
-    (égalité → 0, affiché « partagée (égalité) » ; aucune contribution → indéterminé).</p>
+    (égalité → 0, affiché « partagée (égalité) » ; aucune contribution → indéterminé). La page
+    <a href="textes.html">Textes essentiels</a> et les fiches de groupe en font la lecture
+    principale. L'export du questionnaire embarque pour chaque vote de famille son titre, ses
+    positions et sa participation : ces pages n'ont pas besoin de charger tout le corpus.</p>
     <p>Le résultat est <strong>partageable</strong> : le bouton « Partager » donne un résumé
     condensé et un lien qui rejoue vos réponses (paramètre <code>?r=</code>, index de question +
     position, aucune donnée personnelle) ; la page ouverte par ce lien est allégée pour une capture
@@ -337,7 +340,7 @@ python -m http.server 8000 --directory site</pre>
     (<code>pipeline/</code>) ; sources, volumes et limites détaillés dans le README du dépôt.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=22"></script>
-<script src="assets/methodologie.js?v=22"></script>
+<script src="assets/app.js?v=24"></script>
+<script src="assets/methodologie.js?v=24"></script>
 </body>
 </html>

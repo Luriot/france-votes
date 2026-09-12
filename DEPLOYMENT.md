@@ -12,7 +12,7 @@ sont figées dans l'image au moment du build**. Rafraîchir les données = recon
 À chaque **push sur `main`** (et sur demande) :
 
 1. **test** : lance le pipeline complet (`python pipeline/run_all.py` — télécharge les sources
-   AN/Sénat, construit la base, régénère les exports), puis les 39 tests, `check_site.mjs`
+   AN/Sénat, construit la base, régénère les exports), puis les 50 tests, `check_site.mjs`
    (cohérence JS/exports) et `html-validate`.
 2. **build-and-push** (jamais sur les pull requests) : construit l'image Docker (le pipeline
    tourne dans le build), scanne l'image avec **Trivy** (échec si CVE CRITICAL/HIGH corrigeable),
@@ -65,11 +65,24 @@ Variante plugin **Compose** : `docker compose up -d` avec le `docker-compose.yml
 
 ---
 
-## 5. HTTPS (optionnel, via reverse proxy)
+## 5. HTTPS (optionnel mais requis pour installer l'app)
 
 Nginx Proxy Manager / Traefik → `http://IP_UNRAID:8088`. L'image envoie déjà
 `Content-Security-Policy`, `X-Content-Type-Options: nosniff` et `Referrer-Policy` ; laisse le
 proxy transmettre les en-têtes (ne pas les surcharger).
+
+**PWA** : le site est installable (« Ajouter à l'écran d'accueil » / « Installer l'application »)
+via `manifest.webmanifest` + `service-worker.js`. Les navigateurs exigent **HTTPS** (ou localhost)
+pour installer et pour le hors-ligne : passe par le reverse proxy. Une fois installé et visité en
+ligne, le site reste consultable hors-ligne avec les dernières données en cache ; les données se
+rafraîchissent en priorité depuis le réseau à chaque visite. En cas de doute après une mise à jour,
+vider le cache du site (ou désinstaller/réinstaller l'app).
+
+**Image de partage** : `og:image` pointe vers `assets/og.png` en relatif. Pour un aperçu fiable
+chez tous les crawlers (Twitter/X, Facebook, LinkedIn), remplacer par l'URL absolue de ton domaine
+dans les 4 pages HTML (`content="https://ton-domaine.tld/assets/og.png"`). L'icône source est
+conservée dans `deploy/icon-source.png` ; les tailles dérivées (192, 180 iOS, 512) se régénèrent
+avec n'importe quel outil de redimensionnement PNG, ou en la redéposant sur `site/assets/`.
 
 ---
 

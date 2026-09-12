@@ -5,9 +5,10 @@
 - `python pipeline/run_all.py` — pipeline complet : télécharge (skip si présent, `--force` pour
   retélécharger), construit `data/france-votes.db`, calcule scores/robustesse et régénère
   `site/data/*.json` (~2 min).
-- `python -m unittest discover -s pipeline/tests` — 39 tests ; nécessitent la base et les exports.
-- `node pipeline/check_site.mjs` — vérifie que le JS du site recalcule les mêmes accords que le
-  pipeline ; à lancer après toute modification de `score.py` ou de `site/assets/*.js`.
+- `python -m unittest discover -s pipeline/tests` — 50 tests ; nécessitent la base et les exports.
+- `node pipeline/check_site.mjs` — vérifie le JS contre les exports (66/66 accords, kappa,
+  `?v=N` identique sur les 4 pages, clés lues par le questionnaire) ; à lancer après toute
+  modification de `score.py` ou de `site/assets/*.js`.
 - `python -m http.server 8000 --directory site` — servir le site ; ne pas ouvrir en `file://`
   (les `fetch` des JSON échouent).
 - VS Code : `Ctrl+Shift+B` (ou `Ctrl+Alt+B`, binding local) lance la tâche « site: servir en local »
@@ -38,10 +39,20 @@
 
 ## Front & sécurité
 
+- Kappa : deux implémentations à garder identiques — `score.py:cohen_kappa` et `VV.kappa()`
+  (`app.js`, utilisé par la fiche de paire) ; `check_site.mjs` compare les deux.
+- Mobile : règles tactiles sous `(max-width:760px),(pointer:coarse)` — cibles ≥ 44 px, champs
+  16 px (sinon zoom iOS), `<select>` contraints en largeur, tableaux empilés ou défilants ;
+  ne pas rallonger les libellés de nav (4 mots courts, `nowrap`, vérifiés à 320 px).
+- Ruban de couverture : `renderRibbon()` duplique le contenu (clone `aria-hidden` sans ids) pour
+  le défilement infini — ne pas dupliquer les ids dans le HTML.
 - Toute donnée injectée dans le DOM passe par `VV.esc()` ; couleurs par `VV.safeColor()` (hex
   uniquement) ; jamais de `innerHTML` avec une valeur brute.
 - Après toute modification de `site/assets/*.js|css`, incrémenter `?v=N` dans les 4 pages HTML
   (sinon le navigateur sert l'ancien fichier depuis son cache).
+- PWA : `manifest.webmanifest` + `service-worker.js` (icônes dans `site/assets/`). Si la liste
+  `SHELL` du SW change, incrémenter `VERSION` dedans ; les assets versionnés `?v=N` s'invalident
+  seuls.
 - CSP meta `script-src 'self'` : aucun script inline ni attribut `on*` — ajouter un
   `site/assets/<page>.js` à la place.
 - Liens externes : `target="_blank" rel="noopener"` systématique.

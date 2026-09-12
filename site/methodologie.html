@@ -4,10 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1b3a24">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Votes 2027">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; object-src 'none'">
   <title>Méthodologie — Votes 2027</title>
   <meta name="description" content="Méthodologie complète, reproductible et auditable : sources, sélection des scrutins, pondérations, scores de proximité et tests de robustesse.">
-  <link rel="stylesheet" href="assets/style.css?v=9">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Méthodologie — Votes 2027">
+  <meta property="og:description" content="Méthodologie complète, reproductible et auditable : sources, sélection des scrutins, pondérations, scores de proximité et tests de robustesse.">
+  <meta property="og:image" content="assets/og.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -17,9 +28,9 @@
       <a class="brand" href="index.html">Votes<span>2027</span></a>
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
-        <a href="votes.html">Explorer les votes</a>
+        <a href="votes.html">Votes</a>
         <a href="questionnaire.html">Questionnaire</a>
-        <a href="methodologie.html" aria-current="page">Méthodologie</a>
+        <a href="methodologie.html" aria-current="page">Méthode</a>
       </nav>
       <form class="nav-search" action="votes.html" method="get" role="search">
         <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
@@ -160,9 +171,11 @@
     <p>Le poids d'un scrutin dans le score d'une paire de groupes combine trois principes :</p>
     <ol>
       <li><strong>Un vote distinct = un vote</strong> (poids de base 1 après déduplication) ;</li>
-      <li><strong>Équilibre entre thèmes</strong> : aucun thème ne peut peser plus de 15 % du poids
-      total. Un thème de n scrutins reçoit un facteur min(1 ; 0,15 × N / n), où N est le nombre de
-      votes retenus. Sans cette règle, le budget et ses milliers d'amendements écraserait tous les
+      <li><strong>Équilibre entre thèmes</strong> : un thème de n scrutins reçoit un facteur
+      min(1 ; 0,15 × N / n), où N est le nombre de votes retenus. Ce plafond porte sur le
+      <em>poids de base</em> : la pondération par participation (règle suivante) s'applique
+      ensuite, de sorte que la part effective d'un thème peut dépasser 15 % pour une paire
+      donnée. Sans cette règle, le budget et ses milliers d'amendements écraserait tous les
       autres sujets ;</li>
       <li><strong>Participation</strong> : pour une paire (A, B), chaque scrutin est pondéré par la
       plus faible des deux participations. Un groupe absent ne compte pas, un groupe peu mobilisé
@@ -264,11 +277,11 @@ python -m http.server 8000 --directory site</pre>
 
 <footer class="site">
   <div class="wrap">
-    <p>Méthodologie version 1.0 — voir aussi le document technique <code>docs/METHODOLOGIE.md</code>
-    et l'audit des sources <code>docs/AUDIT.md</code> dans le dépôt.</p>
+    <p>Méthodologie version 1.0 — elle décrit exactement ce qu'exécute le pipeline
+    (<code>pipeline/</code>) ; sources, volumes et limites détaillés dans le README du dépôt.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=9"></script>
-<script src="assets/methodologie.js?v=9"></script>
+<script src="assets/app.js?v=12"></script>
+<script src="assets/methodologie.js?v=12"></script>
 </body>
 </html>

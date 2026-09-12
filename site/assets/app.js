@@ -138,6 +138,27 @@ const VV = (() => {
     return { accord: den > 0 ? num / den : null, n, poids: den };
   }
 
+  function kappa(scrutins, a, b, opts = {}) {
+    const ia = state.meta.groupes.findIndex((g) => g.sigle === a);
+    const ib = state.meta.groupes.findIndex((g) => g.sigle === b);
+    const skipAbstention = opts.excludeAbstention === true;
+    let total = 0, observed = 0;
+    const ca = {}, cb = {};
+    for (const s of scrutins) {
+      const pa = s.p[ia], pb = s.p[ib];
+      if (pa === null || pb === null) continue;
+      if (skipAbstention && (pa === 0 || pb === 0)) continue;
+      total += 1;
+      if (pa === pb) observed += 1;
+      ca[pa] = (ca[pa] || 0) + 1;
+      cb[pb] = (cb[pb] || 0) + 1;
+    }
+    if (!total) return null;
+    const po = observed / total;
+    const pe = Object.keys(ca).reduce((acc, key) => acc + (ca[key] / total) * ((cb[key] || 0) / total), 0);
+    return pe >= 1 ? (po === 1 ? 1 : 0) : (po - pe) / (1 - pe);
+  }
+
   function allPairs(scrutins, opts = {}) {
     const out = {};
     const groups = state.meta.groupes.map((g) => g.sigle);
@@ -202,13 +223,32 @@ const VV = (() => {
     setText("rb-themes", `${fmtNum(compteurs.scrutins_themes)} thématisés`);
     setText("rb-doublons", `${fmtNum(compteurs.doublons)} doublons neutralisés`);
     setText("rb-date", `données AN au ${fmtDate(state.meta.data_built_at)}`);
+    // Défilement continu : duplique le contenu (copie aria-hidden, sans ids) dans une piste animée.
+    const ribbon = document.querySelector(".ribbon");
+    if (ribbon && !ribbon.querySelector(".ribbon-track")) {
+      const group = document.createElement("div");
+      group.className = "ribbon-group";
+      while (ribbon.firstChild) group.append(ribbon.firstChild);
+      const duplicate = group.cloneNode(true);
+      duplicate.setAttribute("aria-hidden", "true");
+      duplicate.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+      const track = document.createElement("div");
+      track.className = "ribbon-track";
+      track.append(group, duplicate);
+      ribbon.append(track);
+    }
   }
 
   return {
     loadJSON, loadAll, loadRibbon, get state() { return state; },
-    fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, heatColor, textOn,
+    fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, kappa, heatColor, textOn,
     stance, esc, safeColor, period, setText, renderRibbon, initSignature,
   };
 })();
 
 VV.initSignature();
+
+// PWA : installable sur téléphone (nécessite HTTPS ou localhost).
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js").catch(() => {});
+}

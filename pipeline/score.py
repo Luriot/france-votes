@@ -3,8 +3,8 @@
 Entrée  : data/france-votes.db
 Sorties : site/data/*.json
 
-Règles documentées dans docs/METHODOLOGIE.md. Tout est déterministe
-(graine fixe pour le bootstrap).
+Règles documentées sur la page « Méthodologie » du site (site/methodologie.html).
+Tout est déterministe (graine fixe pour le bootstrap).
 """
 
 from __future__ import annotations
@@ -220,6 +220,8 @@ def bootstrap(scrutins: list[dict], iterations: int = BOOTSTRAP) -> dict:
     rng = random.Random(SEED)
     retained = [s for s in scrutins if s["poids_base"] > 0]
     n = len(retained)
+    if n == 0:
+        return {}
     pair_entries = {}
     for a, b in itertools.combinations(SIGLES, 2):
         entries = []
@@ -363,7 +365,8 @@ def main() -> int:
     try:
         scrutins = load_scrutins(conn)
         traits = group_traits(conn)
-        built_at = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()[0]
+        row = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()
+        built_at = row[0] if row else None
     finally:
         conn.close()
 
@@ -460,11 +463,13 @@ def main() -> int:
         path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"[ok] {path.relative_to(ROOT)} ({path.stat().st_size} octets)")
 
+    accords = [(v["accord"], k) for k, v in primary.items() if v["accord"] is not None]
+    kappas = sorted(v["kappa"] for v in primary.values() if v["kappa"] is not None)
     summary = {
         "paires": len(primary),
-        "accord_min": min((v["accord"], k) for k, v in primary.items() if v["accord"] is not None),
-        "accord_max": max((v["accord"], k) for k, v in primary.items() if v["accord"] is not None),
-        "kappa_median": sorted(v["kappa"] for v in primary.values() if v["kappa"] is not None)[len(primary) // 2],
+        "accord_min": min(accords) if accords else None,
+        "accord_max": max(accords) if accords else None,
+        "kappa_median": kappas[len(kappas) // 2] if kappas else None,
         "themes": len(theme_counts),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))

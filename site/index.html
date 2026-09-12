@@ -4,10 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1b3a24">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Votes 2027">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; object-src 'none'">
   <title>Votes 2027 — comment votent les groupes à l'Assemblée</title>
   <meta name="description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
-  <link rel="stylesheet" href="assets/style.css?v=9">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Votes 2027 — comment votent les groupes à l'Assemblée">
+  <meta property="og:description" content="Comparateur neutre et reproductible des votes des groupes politiques à l'Assemblée nationale (XVIIe législature), à partir des données ouvertes officielles.">
+  <meta property="og:image" content="assets/og.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -17,9 +28,9 @@
       <a class="brand" href="index.html">Votes<span>2027</span></a>
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html" aria-current="page">Comparer</a>
-        <a href="votes.html">Explorer les votes</a>
+        <a href="votes.html">Votes</a>
         <a href="questionnaire.html">Questionnaire</a>
-        <a href="methodologie.html">Méthodologie</a>
+        <a href="methodologie.html">Méthode</a>
       </nav>
       <form class="nav-search" action="votes.html" method="get" role="search">
         <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
@@ -46,7 +57,7 @@
       leurs scrutins publics, pas d'une sélection de votes choisis à la main. Chaque score est
       recalculable : voici les votes qui rapprochent deux groupes, ceux qui les opposent, et à quel
       point le résultat dépend de la méthode.</p>
-      <p><a href="#comparer">Comparer deux groupes →</a> · <a href="questionnaire.html">Répondre sur des votes réels →</a></p>
+      <p class="hero-links"><a href="#comparer">Comparer deux groupes →</a><span class="sep"> · </span><a href="questionnaire.html">Répondre sur des votes réels →</a></p>
     </div>
     <aside class="meter" aria-label="Couverture des données">
       <p class="eyebrow">Couverture</p>
@@ -169,7 +180,7 @@
     </div>
   </div>
 </footer>
-<script src="assets/app.js?v=9"></script>
-<script src="assets/compare.js?v=9"></script>
+<script src="assets/app.js?v=12"></script>
+<script src="assets/compare.js?v=12"></script>
 </body>
 </html>

@@ -41,6 +41,7 @@
     selected.a = refGroup;
   }
   if (sigles.includes(params.get("b")) && params.get("b") !== selected.a) selected.b = params.get("b");
+  if (selected.b === selected.a) selected.b = sigles.find((sigle) => sigle !== selected.a) ?? selected.b;
   if ([...selTheme.options].some((o) => o.value === params.get("theme"))) selTheme.value = params.get("theme");
   if (periodes.includes(params.get("periode"))) selPeriod.value = params.get("periode");
   if (params.get("abst") === "1" && elAbst) {
@@ -67,25 +68,6 @@
     const periode = selPeriod.value;
     return state.scrutins.filter((s) =>
       (theme === "" || s.th === theme) && (periode === "" || VV.period(s) === periode));
-  }
-
-  function kappa(scrutins, a, b) {
-    const ia = sigles.indexOf(a), ib = sigles.indexOf(b);
-    let total = 0, observed = 0;
-    const ca = {}, cb = {};
-    for (const s of scrutins) {
-      const pa = s.p[ia], pb = s.p[ib];
-      if (pa === null || pb === null) continue;
-      if (excludeAbst && (pa === 0 || pb === 0)) continue;
-      total += 1;
-      if (pa === pb) observed += 1;
-      ca[pa] = (ca[pa] || 0) + 1;
-      cb[pb] = (cb[pb] || 0) + 1;
-    }
-    if (!total) return null;
-    const po = observed / total;
-    const pe = Object.keys(ca).reduce((acc, key) => acc + (ca[key] / total) * ((cb[key] || 0) / total), 0);
-    return pe >= 1 ? (po === 1 ? 1 : 0) : (po - pe) / (1 - pe);
   }
 
   function isFiltered() {
@@ -163,6 +145,7 @@
       const meta = groupes.find((g) => g.sigle === x.sigle);
       return `<li><button type="button" class="rank-row" data-sigle="${VV.esc(x.sigle)}" aria-pressed="${selected.a === refGroup && selected.b === x.sigle}">
         <span class="who"><i style="background:${VV.safeColor(meta.couleur)}"></i>${i + 1}. ${VV.esc(x.sigle)}
+          <span class="full">${VV.esc(meta?.nom ?? "")}</span>
           <span class="why">${VV.fmtNum(x.n)} votes partagés</span></span>
         <span class="track"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>
         <span class="pct">${VV.fmtPct(x.accord)}</span>
@@ -245,6 +228,7 @@
     const pad = compact ? 36 : 40;
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
     const w = 640, h = compact ? 540 : 460;
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
     const pointR = compact ? 15 : 11;
     const labelOffset = compact ? 20 : 14;
     const fontSize = compact ? 17 : 10;
@@ -307,7 +291,7 @@
     const scrutins = filtered();
     const key = VV.pairKey(selected.a, selected.b);
     const stat = VV.pairStats(scrutins, selected.a, selected.b, weightOpts());
-    const kap = kappa(scrutins, selected.a, selected.b);
+    const kap = VV.kappa(scrutins, selected.a, selected.b, weightOpts());
     const rob = state.agreement.robustesse[key];
     const box = document.getElementById("pair-panel");
     if (!stat || stat.accord === null) {
@@ -469,12 +453,13 @@
   selPeriod.addEventListener("change", renderAll);
   elAbst?.addEventListener("change", () => {
     excludeAbst = elAbst.checked;
-    renderGroups();
     renderAll();
   });
   document.getElementById("f-reset").addEventListener("click", () => {
     selTheme.value = "";
     selPeriod.value = "";
+    if (elAbst) elAbst.checked = false;
+    excludeAbst = false;
     renderAll();
   });
 

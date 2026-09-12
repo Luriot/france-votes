@@ -228,7 +228,7 @@ def build(conn: sqlite3.Connection) -> dict:
             continue
         s = json.loads(zs.read(name))["scrutin"]
         n += 1
-        officiel_ref = (s.get("objet", {}).get("dossierLegislatif") or {}).get("dossierRef")
+        officiel_ref = ((s.get("objet") or {}).get("dossierLegislatif") or {}).get("dossierRef")
         dossier_ref, appariement = (officiel_ref, "officiel") if officiel_ref else (None, "")
         if not dossier_ref:
             dossier_ref, appariement = match_dossier(s.get("titre"), dossiers, title_index, doc_titles)
@@ -249,7 +249,7 @@ def build(conn: sqlite3.Connection) -> dict:
                 ((s.get("sort") or {}).get("code")), ((s.get("sort") or {}).get("libelle")),
                 s.get("titre"), ((s.get("demandeur") or {}).get("texte")),
                 ((s.get("objet") or {}).get("libelle")), officiel_ref,
-                ((s.get("objet", {}).get("dossierLegislatif") or {}) or {}).get("libelle"),
+                (((s.get("objet") or {}).get("dossierLegislatif")) or {}).get("libelle"),
                 dossier_ref, appariement, theme, theme_source,
                 s.get("modePublicationDesVotes"),
                 to_int(synthese.get("nombreVotants")), to_int(synthese.get("suffragesExprimes")),
@@ -307,9 +307,11 @@ def build(conn: sqlite3.Connection) -> dict:
 
 def main() -> int:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if DB_PATH.exists():
-        DB_PATH.unlink()
-    conn = sqlite3.connect(DB_PATH)
+    # Construction dans un fichier temporaire : une source corrompue ne détruit pas la base existante.
+    tmp_path = DB_PATH.with_suffix(".building")
+    if tmp_path.exists():
+        tmp_path.unlink()
+    conn = sqlite3.connect(tmp_path)
     try:
         stats = build(conn)
         votes = conn.execute("SELECT COUNT(*) FROM scrutin_votes").fetchone()[0]
@@ -323,8 +325,12 @@ def main() -> int:
                ("db_version", "1")],
         )
         conn.commit()
-    finally:
+    except BaseException:
         conn.close()
+        tmp_path.unlink(missing_ok=True)
+        raise
+    conn.close()
+    tmp_path.replace(DB_PATH)
     print(json.dumps(stats, indent=2, ensure_ascii=False))
     return 0
 

@@ -1,8 +1,10 @@
 """Tests des règles d'ingestion (parsing, positions, appariements)."""
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "pipeline"))
@@ -79,6 +81,17 @@ class TestAppariements(unittest.TestCase):
             self.dossiers, self.title_index, self.doc_titles)
         self.assertEqual((ref, how), (None, ""))
 
+    def test_appariement_inclusion(self):
+        # Le titre du dossier (plus court, ≥ 20 caractères) est contenu dans le titre extrait.
+        ref, how = build_db.match_dossier(
+            "l'article 4 du projet de loi de simplification de la vie économique et des démarches "
+            "administratives (première lecture).",
+            self.dossiers,
+            {build_db.norm("projet de loi de simplification de la vie economique"): "DLR1"},
+            {},
+        )
+        self.assertEqual((ref, how), ("DLR1", "inclusion"))
+
     def test_theme_par_url_senat(self):
         theme, source = build_db.resolve_theme("DLR1", self.dossiers, self.by_url, self.by_title)
         self.assertEqual((theme, source), ("Budget", "senat_url"))
@@ -86,6 +99,24 @@ class TestAppariements(unittest.TestCase):
     def test_theme_absent(self):
         theme, source = build_db.resolve_theme("DLR2", self.dossiers, self.by_url, self.by_title)
         self.assertEqual((theme, source), ("", ""))
+
+
+class TestThemesSenat(unittest.TestCase):
+    def test_premier_theme_et_ignorés(self):
+        csv = (
+            "Titre;URL du dossier;Thèmes\n"
+            "Loi test;http://www.senat.fr/dossier-legislatif/x.html;Budget, Économie et finances, fiscalité\n"
+            "Sans thème;http://www.senat.fr/dossier-legislatif/y.html;\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp)
+            (raw / "senat_dossiers.csv").write_bytes(csv.encode("cp1252"))
+            with mock.patch.object(build_db, "RAW", raw):
+                by_url, by_title = build_db.load_senat_themes()
+        # Un seul thème retenu : le premier de la liste officielle du Sénat.
+        self.assertEqual(by_url["http://www.senat.fr/dossier-legislatif/x.html"], "Budget")
+        self.assertNotIn("http://www.senat.fr/dossier-legislatif/y.html", by_url)
+        self.assertEqual(by_title[build_db.norm("Loi test")], "Budget")
 
 
 if __name__ == "__main__":

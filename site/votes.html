@@ -4,10 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1b3a24">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Votes 2027">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; object-src 'none'">
   <title>Explorer les votes — Votes 2027</title>
   <meta name="description" content="Explorez tous les scrutins publics de l'Assemblée nationale : thème, période, type, position de chaque groupe, source officielle.">
-  <link rel="stylesheet" href="assets/style.css?v=9">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Explorer les votes — Votes 2027">
+  <meta property="og:description" content="Explorez tous les scrutins publics de l'Assemblée nationale : thème, période, type, position de chaque groupe, source officielle.">
+  <meta property="og:image" content="assets/og.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -17,9 +28,9 @@
       <a class="brand" href="index.html">Votes<span>2027</span></a>
       <nav class="site" aria-label="Navigation principale">
         <a href="index.html">Comparer</a>
-        <a href="votes.html" aria-current="page">Explorer les votes</a>
+        <a href="votes.html" aria-current="page">Votes</a>
         <a href="questionnaire.html">Questionnaire</a>
-        <a href="methodologie.html">Méthodologie</a>
+        <a href="methodologie.html">Méthode</a>
       </nav>
       <form class="nav-search" action="votes.html" method="get" role="search">
         <input type="search" name="q" placeholder="Rechercher un scrutin…" aria-label="Rechercher un scrutin">
@@ -126,7 +137,7 @@
     pointent vers l'analyse nominative complète de chaque scrutin.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=9"></script>
-<script src="assets/votes.js?v=9"></script>
+<script src="assets/app.js?v=12"></script>
+<script src="assets/votes.js?v=12"></script>
 </body>
 </html>

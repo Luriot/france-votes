@@ -49,6 +49,13 @@ class TestBaseReelle(unittest.TestCase):
             "SELECT DISTINCT groupe_canonique FROM scrutin_groupes WHERE groupe_canonique IS NOT NULL")}
         self.assertEqual(rows, set(SIGLES))
 
+    def test_alias_udr_appliques(self):
+        # Règle AGENTS.md : UDR = fusion PO845520/PO847173/PO872880 (renommages, pas scission).
+        count = self.conn.execute(
+            "SELECT COUNT(*) FROM scrutin_groupes WHERE groupe_ref IN ('PO872880','PO845520') "
+            "AND groupe_canonique='UDR'").fetchone()[0]
+        self.assertGreater(count, 3000)
+
     def test_scrutin_218_conforme_page_officielle(self):
         row = self.conn.execute(
             "SELECT pour, contre, abstentions, non_votants FROM scrutins WHERE numero=218").fetchone()
@@ -98,6 +105,40 @@ class TestExports(unittest.TestCase):
             self.assertEqual(len(s["q"]), 12)
             self.assertIn(s["b"], (0, 1))
             self.assertIn(s["r"], (None, "adopté", "rejeté"))
+            self.assertIsInstance(s["m"], int)
+            self.assertTrue(all(0 <= index < 12 for index in s["pv"]))
+            self.assertIsInstance(s["th"], str)
+            self.assertIsInstance(s["ti"], str)
+            self.assertIsInstance(s["d"], str)
+            self.assertIsInstance(s["f"], (int, float))
+            self.assertIn(s["ind"], (0, 1))
+            self.assertTrue(s["dup"] is None or isinstance(s["dup"], str))
+
+    def test_traits_groupes(self):
+        for groupe in self.meta["groupes"]:
+            self.assertGreater(groupe["membres"], 0)
+            self.assertGreater(groupe["cohesion"], 0)
+            self.assertLessEqual(groupe["cohesion"], 100)
+
+    def test_pivots_et_marge_coherents(self):
+        # Vérification indépendante de l'export m/pv : on recalcule les basculements depuis la base.
+        conn = sqlite3.connect(DB)
+        try:
+            total = conn.execute("SELECT pour, contre FROM scrutins WHERE numero=218").fetchone()
+            groups = conn.execute(
+                "SELECT groupe_canonique, pour, contre FROM scrutin_groupes "
+                "WHERE scrutin_uid='VTANR5L17V218' AND groupe_canonique IS NOT NULL"
+            ).fetchall()
+        finally:
+            conn.close()
+        adopted = total[0] > total[1]
+        expected = sorted(
+            sigle for sigle, pour, contre in groups
+            if ((total[0] - pour + contre) > (total[1] - contre + pour)) != adopted
+        )
+        row = next(s for s in self.scrutins if s["n"] == 218)
+        self.assertEqual(row["m"], total[0] - total[1])
+        self.assertEqual(sorted(SIGLES[index] for index in row["pv"]), expected)
 
     def test_recalcul_identique_au_pipeline(self):
         conn = sqlite3.connect(DB)

@@ -100,13 +100,13 @@ header.site:focus-within { transform: none; opacity: 1; }
 nav.site { display: flex; flex-wrap: wrap; gap: 1.1rem; margin-left: auto; align-items: center; }
 nav.site a {
   font-size: 0.82rem; font-weight: 500; color: var(--ink-soft); text-decoration: none;
-  padding: 0.15rem 0; border-bottom: 1px solid transparent; transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap; padding: 0.15rem 0; border-bottom: 1px solid transparent; transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 nav.site a:hover, nav.site a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
 @media (hover: hover) { nav.site:has(a:hover) a:not(:hover) { opacity: 0.35; } }
 .nav-search { display: flex; gap: 0.35rem; }
-.nav-search input { min-width: 12rem; padding: 0.42rem 0.7rem; font-size: 0.85rem; }
-.nav-search button { padding: 0.42rem 0.7rem; font-size: 0.85rem; }
+.nav-search input { flex: 1 1 auto; min-width: 0; padding: 0.42rem 0.7rem; font-size: 0.85rem; }
+.nav-search button { flex: none; white-space: nowrap; padding: 0.42rem 0.7rem; font-size: 0.85rem; }
 @media (max-width: 760px) {
   .nav-search { flex-basis: 100%; }
   .nav-search input { width: 100%; }
@@ -119,9 +119,20 @@ nav.site a:hover, nav.site a[aria-current="page"] { color: var(--ink); border-bo
   font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.03em;
   padding: 0.34rem 0.8rem;
 }
-.ribbon span { padding-right: 1rem; margin-right: 1rem; border-right: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); }
+.ribbon span { padding-right: 1rem; margin-right: 1rem; border-right: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); white-space: nowrap; }
 .ribbon span:last-child { border-right: 0; }
 .ribbon b { color: var(--lime); font-weight: 500; }
+
+/* Défilement continu : le contenu est dupliqué (2e copie aria-hidden) et défile en boucle. */
+.ribbon { overflow: hidden; }
+.ribbon-track { display: flex; width: max-content; animation: ribbon-scroll 30s linear infinite; }
+.ribbon-group { display: flex; flex-wrap: nowrap; }
+.ribbon:hover .ribbon-track, .ribbon:focus-within .ribbon-track { animation-play-state: paused; }
+@keyframes ribbon-scroll { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .ribbon { overflow-x: auto; }
+  .ribbon-track { animation: none; }
+}
 
 main { padding-top: var(--section); }
 
@@ -246,6 +257,7 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--paper); borde
 .rank-row[aria-pressed="true"] { background: var(--lime); }
 .rank-row .who { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
 .rank-row .who i { width: 0.6rem; height: 0.6rem; border-radius: 100vw; display: inline-block; flex: none; }
+.rank-row .who .full { font-weight: 400; font-size: 0.8rem; color: var(--ink-soft); }
 .rank-row .who .why { font-size: 0.72rem; color: var(--ink-faint); font-family: var(--font-mono); font-weight: 400; }
 .rank-row .track { height: 0.4rem; border-radius: 100vw; background: var(--inset); overflow: hidden; }
 .rank-row .track i { display: block; height: 100%; background: var(--accent); }
@@ -417,12 +429,12 @@ footer.site .bottom { margin-top: var(--section); padding-top: 1.2rem; border-to
   /* Header statique sur téléphone : un bandeau collant de ~200 px mange l'écran. */
   header.site { position: static; }
   .nav-shell { gap: 0.2rem 0.9rem; }
-  /* Nav sur une seule ligne défilable : 4 liens ne tiennent pas sur 320 px. */
-  nav.site { flex-wrap: nowrap; overflow-x: auto; margin-left: 0; flex-basis: 100%; }
-  .ribbon { flex-wrap: nowrap; overflow-x: auto; }
-  .ribbon span { flex: none; white-space: nowrap; }
+  /* 4 libellés courts tiennent sur une ligne ; nowrap garantit qu'aucun ne se coupe. */
+  nav.site { flex-wrap: nowrap; overflow-x: auto; margin-left: 0; flex-basis: 100%; gap: 0.65rem; }
+  nav.site a { font-size: 0.78rem; flex: none; }
   .nav-search { flex-basis: 100%; }
-  .nav-search input { width: 100%; min-width: 0; }
+  .hero-links a { display: block; }
+  .hero-links .sep { display: none; }
   /* Les <select> ont une largeur intrinsèque = option la plus longue : on les contraint. */
   .field { flex: 1 1 45%; min-width: 0; }
   select { width: 100%; min-width: 0; }
@@ -440,6 +452,13 @@ footer.site .bottom { margin-top: var(--section); padding-top: 1.2rem; border-to
   .votes-table td { display: inline-block; border: 0; padding: 0.1rem 0.5rem 0.1rem 0; }
   .votes-table td:nth-child(2) { display: block; }
   .votes-table td:nth-child(3) { display: block; padding-top: 0.3rem; }
+}
+
+@media (max-width: 360px) {
+  /* Ultra-compact : les 4 libellés doivent tenir sans défilement sur les petits écrans. */
+  .nav-shell { padding-left: 0.7rem; padding-right: 0.7rem; }
+  nav.site { gap: 0.45rem; }
+  nav.site a { font-size: 0.74rem; }
 }
 
 /* Cibles tactiles : ≥ 44 px et champs ≥ 16 px (sinon iOS zoome au focus). */

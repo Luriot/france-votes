@@ -1,0 +1,17 @@
+{
+  "name": "Votes 2027 — Assemblée nationale",
+  "short_name": "Votes 2027",
+  "description": "Comparateur neutre et reproductible des votes des groupes à l'Assemblée nationale.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7efdb",
+  "theme_color": "#1b3a24",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

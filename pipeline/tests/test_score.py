@@ -101,6 +101,22 @@ class TestDedupEtPlafond(unittest.TestCase):
         self.assertLess(scrutins[0]["facteur_theme"], 1.0)
         self.assertEqual(scrutins[-1]["facteur_theme"], 1.0)
 
+    def test_position_officielle(self):
+        s = make_scrutin({"RN": "pour"})
+        s["positions_officielles"] = {"RN": "pour", "EPR": "abstention", "NI": "autre", "DEM": None}
+        self.assertEqual(score.position_for(s, "RN", "officielle"), "pour")
+        self.assertEqual(score.position_for(s, "EPR", "officielle"), "abstention")
+        self.assertIsNone(score.position_for(s, "NI", "officielle"))
+        self.assertIsNone(score.position_for(s, "DEM", "officielle"))
+
+    def test_deduplicate_indisponible(self):
+        s = make_scrutin({"RN": "pour"})
+        s["groupes_valides"] = 0
+        score.deduplicate([s])
+        self.assertEqual(s["poids_base"], 0.0)
+        self.assertTrue(s["indisponible"])
+        self.assertIsNone(s["dup_of"])
+
     def test_seuil_participation(self):
         s = make_scrutin({"RN": "pour", "EPR": "pour"}, parts={"RN": 0.2, "EPR": 1.0})
         self.assertEqual(score.position_for(s, "RN", "seuil25"), None)
@@ -156,6 +172,36 @@ class TestPivots(unittest.TestCase):
         marge, pivots = score.pivots_for(10, 8, counts)
         self.assertEqual(marge, 2)
         self.assertEqual(pivots, [])
+
+
+class TestAllPairs(unittest.TestCase):
+    def test_cles_canoniques(self):
+        scrutins = [make_scrutin({"RN": "pour", "EPR": "pour", "NI": "contre"})]
+        pairs = score.all_pairs(scrutins)
+        self.assertEqual(len(pairs), 66)
+        self.assertIn("RN|EPR", pairs)
+        self.assertNotIn("EPR|RN", pairs, "les clés suivent l'ordre canonique, jamais l'alphabétique")
+        self.assertIn("UDR|NI", pairs)
+
+
+class TestQuestionnaire(unittest.TestCase):
+    def _scrutin(self, split, theme, base=1.0):
+        positions = {sigle: ("pour" if i < split else "contre") for i, sigle in enumerate(score.SIGLES)}
+        s = make_scrutin(positions, theme=theme, base=base)
+        s.update({"numero": 1, "date": "2025-01-01", "titre": "t",
+                  "parts": {sigle: 1.0 for sigle in score.SIGLES}})
+        return s
+
+    def test_selection_par_entropie(self):
+        serre = self._scrutin(6, "Budget")          # entropie maximale
+        tranche = self._scrutin(11, "Budget")       # peu discriminant
+        unclassified = self._scrutin(6, "Non classé")
+        doublon = self._scrutin(6, "Budget", base=0.0)
+        items = score.questionnaire_items([serre, tranche, unclassified, doublon])
+        self.assertEqual([item["uid"] for item in items], [serre["uid"], tranche["uid"]])
+        self.assertEqual(len(items[0]["positions"]), len(score.SIGLES))
+        for champ in ("numero", "date", "titre", "theme", "entropie", "poids", "parts"):
+            self.assertIn(champ, items[0])
 
 
 if __name__ == "__main__":

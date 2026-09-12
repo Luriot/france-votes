@@ -43,12 +43,21 @@ function check(label, condition, detail = "") {
 check("meta.json : 12 groupes", VV.state.meta.groupes.length === 12);
 check("scrutins.json : 12 positions par scrutin", VV.state.scrutins.every((s) => s.p.length === 12 && s.q.length === 12));
 
-for (const key of ["RN|UDR", "ECOS|UDR", "EPR|DEM", "LFI-NFP|SOC"]) {
+// Tous les accords des 66 paires, plus le kappa, doivent être recalculables côté navigateur.
+const allPairs = VV.allPairs(VV.state.scrutins);
+let accordOk = 0;
+for (const [key, exported] of Object.entries(VV.state.agreement.principal)) {
   const [a, b] = key.split("|");
   const recomputed = VV.pairStats(VV.state.scrutins, a, b).accord;
-  const exported = VV.state.agreement.principal[key].accord;
   // tolérance 1e-4 : les participations exportées sont arrondies à 4 décimales.
-  check(`accord ${key} recalculé côté navigateur`, Math.abs(recomputed - exported) < 1e-4,
+  if (exported.accord === null || Math.abs(recomputed - exported.accord) < 1e-4) accordOk += 1;
+}
+check("accord recalculé sur les 66 paires", accordOk === 66, `${accordOk}/66`);
+for (const key of ["RN|UDR", "ECOS|UDR", "RN|LFI-NFP"]) {
+  const [a, b] = key.split("|");
+  const recomputed = VV.kappa(VV.state.scrutins, a, b);
+  const exported = VV.state.agreement.principal[key].kappa;
+  check(`kappa ${key} recalculé côté navigateur`, Math.abs(recomputed - exported) < 1e-6,
     `JS=${recomputed.toFixed(6)} pipeline=${exported.toFixed(6)}`);
 }
 
@@ -57,7 +66,6 @@ const sample = VV.state.scrutins.filter((s) => s.b === 1 && s.p.every((p) => p !
 check("au moins 100 votes entièrement déterminés", sample.length >= 100, `${sample.length}`);
 
 // Les clés de paires doivent être identiques côté pipeline et côté navigateur.
-const allPairs = VV.allPairs(VV.state.scrutins);
 for (const [a, b] of [["RN", "EPR"], ["RN", "LFI-NFP"], ["NI", "UDR"]]) {
   const key = VV.pairKey(a, b);
   check(`clé de paire ${key} présente`, key in allPairs);
@@ -89,5 +97,21 @@ check("safeColor rejette une valeur injectée",
 check("sourceUrl ne garde que les chiffres",
   VV.sourceUrl({ n: '12"><script>alert(1)</script>' }) === "https://www.assemblee-nationale.fr/dyn/17/scrutins/121");
 check("stance résiste à une valeur inconnue", VV.stance("evil").includes("n.d."));
+
+// Garde-fous de contrat : les pages consomment les clés réellement exportées…
+const questionnaireSrc = await readFile(new URL("../site/assets/questionnaire.js", import.meta.url), "utf8");
+check("questionnaire.js lit 'numero' (pas 'n')",
+  questionnaireSrc.includes("q.numero") && !/\bq\.n\b/.test(questionnaireSrc));
+
+// …et le versionnage des assets reste identique sur les 4 pages (sinon cache servi périmé).
+const pages = ["index.html", "votes.html", "questionnaire.html", "methodologie.html"];
+const versions = new Map();
+for (const page of pages) {
+  const html = await readFile(new URL(`../site/${page}`, import.meta.url), "utf8");
+  const refs = [...html.matchAll(/assets\/[\w.-]+\.(?:js|css)\?v=(\d+)/g)].map((m) => m[1]);
+  check(`${page} référence des assets versionnés`, refs.length >= 2, `${refs.length} réfs`);
+  for (const v of refs) versions.set(v, (versions.get(v) || 0) + 1);
+}
+check("un seul ?v=N pour toutes les pages", versions.size === 1, `versions: ${[...versions.keys()].join(", ")}`);
 
 process.exit(failures ? 1 : 0);

@@ -34,11 +34,11 @@
               <span class="badge neutre">${VV.fmtDate(q.date)}</span></p>
             <h3 style="margin-bottom:.2rem">${VV.esc(q.titre)}</h3>
             <p style="font-size:.82rem;color:var(--ink-faint);margin:0 0 .5rem">
-              Scrutin n° ${Number(q.n) || 0} — « pour » signifie voter pour ce texte / cet amendement.
-              <a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(q.n) || 0}" target="_blank" rel="noopener">source officielle</a>.
+              Scrutin n° ${Number(q.numero) || 0} — « pour » signifie voter pour ce texte / cet amendement.
+              <a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(q.numero) || 0}" target="_blank" rel="noopener">source officielle</a>.
               Sélection automatique : vote parmi les plus discriminants du thème (entropie ${VV.esc(String(q.entropie).replace(".", ","))}).
             </p>
-            <div class="q-actions" role="group" aria-label="Votre position sur le scrutin ${Number(q.n) || 0}">
+            <div class="q-actions" role="group" aria-label="Votre position sur le scrutin ${Number(q.numero) || 0}">
               <button type="button" class="ghost" data-uid="${VV.esc(q.uid)}" data-value="1"${pressed(1)}>Pour</button>
               <button type="button" class="ghost" data-uid="${VV.esc(q.uid)}" data-value="-1"${pressed(-1)}>Contre</button>
               <button type="button" class="ghost" data-uid="${VV.esc(q.uid)}" data-value="0"${pressed(0)}>Abstention</button>
@@ -103,9 +103,9 @@
         <b>${VV.fmtPct(g.accord)}</b></div>`).join("")}
       <details class="aide"><summary>Pourquoi ${VV.esc(best.sigle)} arrive en tête ? (votes qui ont le plus pesé)</summary>
         <h3>Votes où vous êtes d'accord avec ${VV.esc(best.sigle)}</h3>
-        <ul>${drivers(best, true).map((x) => `<li><a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(x.q.n) || 0}" target="_blank" rel="noopener">${VV.esc(x.q.titre)}</a> (poids ${x.w.toFixed(2)})</li>`).join("") || "<li>Aucun</li>"}</ul>
+        <ul>${drivers(best, true).map((x) => `<li><a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(x.q.numero) || 0}" target="_blank" rel="noopener">${VV.esc(x.q.titre)}</a> (poids ${x.w.toFixed(2)})</li>`).join("") || "<li>Aucun</li>"}</ul>
         <h3>Votes où vous êtes en désaccord</h3>
-        <ul>${drivers(best, false).map((x) => `<li><a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(x.q.n) || 0}" target="_blank" rel="noopener">${VV.esc(x.q.titre)}</a> (poids ${x.w.toFixed(2)})</li>`).join("") || "<li>Aucun</li>"}</ul>
+        <ul>${drivers(best, false).map((x) => `<li><a href="https://www.assemblee-nationale.fr/dyn/17/scrutins/${Number(x.q.numero) || 0}" target="_blank" rel="noopener">${VV.esc(x.q.titre)}</a> (poids ${x.w.toFixed(2)})</li>`).join("") || "<li>Aucun</li>"}</ul>
       </details>
       <p style="font-size:.8rem;color:var(--ink-faint)">Chaque vote pèse selon son thème (plafond 15 % par thème) et la participation du groupe à ce vote. Vous pouvez modifier vos réponses : le résultat se met à jour immédiatement, sans rien cacher.</p>`;
   }

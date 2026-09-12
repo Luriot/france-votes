@@ -1,4 +1,4 @@
-# Votes 2027
+# <img src="site/assets/icon-192.png" width="44" alt=""> Votes 2027
 
 Outil citoyen, neutre et reproductible pour comprendre comment les groupes politiques de
 l'Assemblée nationale votent réellement, à partir des **données ouvertes officielles de
@@ -7,6 +7,8 @@ l'Assemblée nationale** et des **thèmes officiels du Sénat**.
 Contrairement aux sélections éditoriales (par exemple « Leurs Votes », qui analyse ~1 800 votes
 choisis par une rédaction), ce projet prend **tous** les scrutins publics de la législature, puis
 applique des règles écrites, déterministes et testées. Aucun vote n'est choisi à la main.
+
+![Votes 2027 — comment les groupes votent-ils vraiment ?](site/assets/og.png)
 
 ## Démarrage rapide
 
@@ -30,13 +32,21 @@ pipeline/
   score.py       pondérations, accords, kappa, robustesse, exports du site
   run_all.py     les trois étapes d'affilée
   check_site.mjs vérification du JS de site contre les exports
-  tests/         39 tests unitaires et d'intégration
+  tests/         50 tests unitaires et d'intégration
 data/            données brutes (ignorées par git) + france-votes.db
 site/            site statique (aucun framework, aucun build) + données JSON générées
-docs/
-  AUDIT.md       audit des sources : volumes réels, structure, problèmes constatés
-  METHODOLOGIE.md toutes les règles (population, positions, pondérations, robustesse)
+  assets/        style, JS natif, icônes (icon-192, icon-512 « any maskable », apple-touch), og.png
+  manifest.webmanifest, service-worker.js   PWA (installable, hors-ligne)
+deploy/nginx.conf configuration nginx de production (CSP, gzip, cache, PWA)
+Dockerfile       image de prod : pipeline exécuté au build, nginx sert site/
+docker-compose.yml   test local / plugin Compose Unraid
+.github/workflows/main.yml   CI (pipeline + 50 tests + check_site + HTML), build GHCR,
+                             scan Trivy, rebuild planifié chaque lundi
+DEPLOYMENT.md    guide GitHub → GHCR → Unraid (DNS, HTTPS, mises à jour)
 ```
+
+Toutes les règles de la méthodologie et l'audit des sources sont documentés sur le site lui-même
+(page « Méthodologie ») et résumés dans les sections ci-dessous.
 
 ## Ce que publie le site
 
@@ -49,6 +59,9 @@ docs/
   groupes dont le basculement change le résultat), export CSV, chacun relié à sa page officielle.
 - **Questionnaire** : questions issues automatiquement des scrutins les plus discriminants par
   thème ; l'utilisateur voit les votes qui pèsent sur son résultat.
+- **Sur téléphone** : design responsive (testé jusqu'à 320 px), cibles tactiles ≥ 44 px, et
+  **PWA installable** (« Ajouter à l'écran d'accueil ») avec consultation **hors-ligne** des
+  dernières données ; image de partage dédiée (`og.png`) pour les réseaux.
 - **Méthodologie** : toutes les règles et les limites, en clair.
 
 ## Instantané des données (build du 11/09/2026)
@@ -72,7 +85,8 @@ docs/
    stricte, égalité = non déterminée).
 3. Pas de classification politique des votes par l'algorithme ; les axes de la carte sont
    dérivés des votes après coup.
-4. Pondérations publiées : plafond de 15 % par thème, pondération par la participation.
+4. Pondérations publiées : facteur par thème `min(1 ; 0,15 × N / n)`, puis pondération par la
+   participation (la part effective d'un thème peut donc dépasser 15 % sur une paire donnée).
 5. Robustesse affichée : 7 variantes de méthode, leave-one-theme-out, intervalles bootstrap
    (300 rééchantillonnages, graine fixe).
 6. Traçabilité : chaque scrutin conserve son identifiant, sa date, son URL source et la méthode
@@ -83,6 +97,14 @@ docs/
 Image Docker unique (`Dockerfile`) : le pipeline génère les données au build, nginx sert `site/`.
 CI/CD GitHub Actions → GHCR → Unraid, avec scan Trivy et rebuild planifié chaque lundi pour la
 fraîcheur des données. Guide complet : [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
+```bash
+docker build -t france-votes .          # ~3 min (télécharge les sources officielles)
+docker run --rm -p 8088:80 france-votes
+```
+
+L'installation PWA et le hors-ligne exigent HTTPS (reverse proxy) ; la procédure Unraid détaillée
+est dans le guide.
 
 ## Licence et sources
 

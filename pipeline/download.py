@@ -64,6 +64,12 @@ def fetch(url: str, dest: Path) -> None:
 
 def main(force: bool = False) -> int:
     RAW.mkdir(parents=True, exist_ok=True)
+    previous: dict[str, dict] = {}
+    if MANIFEST.exists():
+        try:
+            previous = {entry["file"]: entry for entry in json.loads(MANIFEST.read_text(encoding="utf-8")).get("sources", [])}
+        except (json.JSONDecodeError, KeyError, TypeError):
+            print("[warn] manifest illisible, reconstruction complète")
     entries = []
 
     for src in SOURCES:
@@ -75,6 +81,15 @@ def main(force: bool = False) -> int:
             fetch(src["url"], dest)
             time.sleep(1)
         md5, sha = checksums(dest)
+        old = previous.get(src["file"])
+        if old and not force and old.get("md5") == md5 and old.get("sha256") == sha:
+            # Fichier inchangé : on conserve la date de récupération d'origine (piste d'audit).
+            entries.append({**src, "bytes": old["bytes"], "md5": md5, "sha256": sha,
+                            "retrieved_at": old["retrieved_at"]})
+            print(f"         {dest.stat().st_size} octets md5={md5} (inchangé)")
+            continue
+        if old and old.get("sha256") != sha:
+            print(f"         ATTENTION {src['file']} diffère du manifest précédent")
         entries.append({
             **src,
             "bytes": dest.stat().st_size,

@@ -259,22 +259,6 @@
     table.append(tbody);
   }
 
-  /* --- derniers votes (accueil) --- */
-  function renderRecent() {
-    const box = document.getElementById("derniers-accueil");
-    if (!box) return;
-    const rows = [...state.scrutins].sort((a, b) => b.n - a.n).slice(0, 3);
-    box.innerHTML = `<ul class="impact">${rows.map((s) => `<li>
-      <div class="meta">
-        <span class="date">${VV.fmtDate(s.d)}</span>
-        <span class="badge theme">${VV.esc(s.th)}</span>
-        <span class="badge ${s.r === "adopté" ? "adopte" : "rejete"}">${VV.esc(s.r || "–")}</span>
-      </div>
-      <a href="${VV.sourceUrl(s)}" target="_blank" rel="noopener">${VV.esc(s.ti)}</a>
-    </li>`).join("")}</ul>
-    <p class="fineprint"><a href="votes.html">Tous les scrutins, filtrables →</a></p>`;
-  }
-
   /* --- carte MDS --- */
   function renderMap() {
     const svg = document.getElementById("map");
@@ -550,7 +534,6 @@
 
   renderAll();
   renderGroups();
-  renderRecent();
   renderMap();
 })().catch((err) => {
   document.getElementById("pair-panel").innerHTML = `<p class="erreur">Erreur de chargement : ${VV.esc(err.message)}</p>`;

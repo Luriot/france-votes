@@ -2,8 +2,9 @@
 
 ## Commandes
 
-- `python pipeline/run_all.py` — pipeline complet : télécharge (skip si présent), construit
-  `data/france-votes.db`, calcule scores/robustesse et régénère `site/data/*.json` (~2 min).
+- `python pipeline/run_all.py` — pipeline complet : télécharge (skip si présent, `--force` pour
+  retélécharger), construit `data/france-votes.db`, calcule scores/robustesse et régénère
+  `site/data/*.json` (~2 min).
 - `python -m unittest discover -s pipeline/tests` — 39 tests ; nécessitent la base et les exports.
 - `node pipeline/check_site.mjs` — vérifie que le JS du site recalcule les mêmes accords que le
   pipeline ; à lancer après toute modification de `score.py` ou de `site/assets/*.js`.
@@ -14,6 +15,11 @@
 - `python -X utf8 <script>.py` — obligatoire sous Windows (console cp1252) ; jamais de
   `python -c` multi-ligne sous PowerShell 5.1 : écrire un fichier dans `pipeline/`.
 - `npx --yes html-validate@9 site/*.html` — validation HTML optionnelle (non installée).
+- Vérif rendu/JS sans navigateur projet : Edge/Chrome headless (`--headless=new
+  --screenshot=out.png --window-size=1440,2600 <url>`, ou CDP port 9222) ; scripts de capture
+  dans `%TEMP%`, jamais commités.
+- `docker build -t france-votes .` — image de prod : le pipeline tourne dans le build (données
+  figées), nginx sert `site/` ; déploiement Unraid/GHCR détaillé dans `DEPLOYMENT.md`.
 
 ## Données & architecture
 
@@ -22,15 +28,20 @@
 - Après toute modification de `build_db.py` ou `score.py` : relancer `run_all.py`, puis tests +
   `check_site.mjs` (les exports JSON sont la source des tests d'intégration).
 - Ordre canonique des groupes défini une seule fois (`pipeline/build_db.py`, `CANON_GROUPS`) et
-  importé par `score.py` ; tous les tableaux exportés (`p`, `q`, `positions`, `parts`, `c`) sont
-  indexés comme `meta.groupes`.
-- Thèmes = base Dosleg du Sénat uniquement (l'open data AN n'expose pas d'`indexation` en
-  législature 17) ; UDR = fusion `PO847173`/`PO872880`/`PO845520` ; 14 scrutins `PO0` exclus.
+  importé par `score.py` ; les tableaux exportés (`scrutins.json` : `p` positions, `q`
+  participations, `m` marge, `pv` groupes décisifs) sont indexés comme `meta.groupes`.
+- Clés de paire `A|B` toujours dans l'ordre canonique (jamais alphabétique) : utiliser
+  `VV.pairKey()`, jamais `.sort()`.
+- Thèmes = base Dosleg du Sénat uniquement (premier thème de la liste retenu, 24 libellés courts ;
+  l'open data AN n'expose pas d'`indexation` en législature 17) ; UDR = fusion
+  `PO847173`/`PO872880`/`PO845520` ; 14 scrutins `PO0` exclus.
 
 ## Front & sécurité
 
 - Toute donnée injectée dans le DOM passe par `VV.esc()` ; couleurs par `VV.safeColor()` (hex
   uniquement) ; jamais de `innerHTML` avec une valeur brute.
+- Après toute modification de `site/assets/*.js|css`, incrémenter `?v=N` dans les 4 pages HTML
+  (sinon le navigateur sert l'ancien fichier depuis son cache).
 - CSP meta `script-src 'self'` : aucun script inline ni attribut `on*` — ajouter un
   `site/assets/<page>.js` à la place.
 - Liens externes : `target="_blank" rel="noopener"` systématique.

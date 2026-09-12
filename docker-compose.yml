@@ -1,0 +1,10 @@
+services:
+  france-votes:
+    image: ghcr.io/luriot/france-votes:latest
+    container_name: france-votes
+    ports:
+      - "8088:80"
+    restart: unless-stopped
+    # Mises à jour automatiques via Watchtower (optionnel) :
+    # labels:
+    #   com.centurylinklabs.watchtower.enable: "true"

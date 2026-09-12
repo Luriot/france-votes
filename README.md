@@ -78,6 +78,12 @@ docs/
 6. Traçabilité : chaque scrutin conserve son identifiant, sa date, son URL source et la méthode
    d'appariement de son thème.
 
+## Déploiement
+
+Image Docker unique (`Dockerfile`) : le pipeline génère les données au build, nginx sert `site/`.
+CI/CD GitHub Actions → GHCR → Unraid, avec scan Trivy et rebuild planifié chaque lundi pour la
+fraîcheur des données. Guide complet : [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
 ## Licence et sources
 
 Données : Assemblée nationale (licence ouverte), Sénat / base Dosleg (licence ouverte).

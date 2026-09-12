@@ -1,0 +1,96 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # Rafraîchissement des données : l'image embarque les scrutins, on la reconstruit
+  # chaque lundi avec les dernières sources AN/Sénat.
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Pipeline complet (sources officielles → base → exports)
+        run: python pipeline/run_all.py
+
+      - name: Tests (39)
+        run: python -m unittest discover -s pipeline/tests
+
+      - name: Cohérence JS du site / exports
+        run: node pipeline/check_site.mjs
+
+      - name: Validation HTML
+        run: npx --yes html-validate@9 site/index.html site/votes.html site/questionnaire.html site/methodologie.html
+
+  build-and-push:
+    needs: [test]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Normalize image name
+        id: vars
+        run: echo "image=${{ env.REGISTRY }}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image (local only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: |
+            ${{ steps.vars.outputs.image }}:latest
+            ${{ steps.vars.outputs.image }}:sha-${{ github.sha }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.vars.outputs.image }}:sha-${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.image }}:latest
+            ${{ steps.vars.outputs.image }}:sha-${{ github.sha }}

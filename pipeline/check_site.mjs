@@ -45,14 +45,16 @@ check("scrutins.json : 12 positions par scrutin", VV.state.scrutins.every((s) =>
 
 // Tous les accords des 66 paires, plus le kappa, doivent être recalculables côté navigateur.
 const allPairs = VV.allPairs(VV.state.scrutins);
-let accordOk = 0;
+let accordOk = 0, accordesOk = 0;
 for (const [key, exported] of Object.entries(VV.state.agreement.principal)) {
   const [a, b] = key.split("|");
-  const recomputed = VV.pairStats(VV.state.scrutins, a, b).accord;
+  const stat = VV.pairStats(VV.state.scrutins, a, b);
   // tolérance 1e-4 : les participations exportées sont arrondies à 4 décimales.
-  if (exported.accord === null || Math.abs(recomputed - exported.accord) < 1e-4) accordOk += 1;
+  if (exported.accord === null || Math.abs(stat.accord - exported.accord) < 1e-4) accordOk += 1;
+  if (exported.accordes === stat.accordes) accordesOk += 1;
 }
 check("accord recalculé sur les 66 paires", accordOk === 66, `${accordOk}/66`);
+check("compteur d'accords bruts identique pipeline/navigateur", accordesOk === 66, `${accordesOk}/66`);
 for (const key of ["RN|UDR", "ECOS|UDR", "RN|LFI-NFP"]) {
   const [a, b] = key.split("|");
   const recomputed = VV.kappa(VV.state.scrutins, a, b);

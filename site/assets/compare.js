@@ -186,7 +186,7 @@
       return `<li><button type="button" class="rank-row" data-sigle="${VV.esc(x.sigle)}" aria-pressed="${selected.a === refGroup && selected.b === x.sigle}">
         <span class="who"><i style="background:${VV.safeColor(meta.couleur)}"></i>${i + 1}. ${VV.esc(x.sigle)}
           <span class="full">${VV.esc(meta?.nom ?? "")}</span>
-          <span class="why">${VV.fmtNum(x.n)} votes partagés</span></span>
+          <span class="why" title="Nombre de scrutins où les deux groupes ont voté la même chose, sur le total des scrutins où les deux ont une position déterminée">${VV.fmtNum(x.accordes)} d'accord sur ${VV.fmtNum(x.n)} scrutins</span></span>
         <span class="track"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>
         <span class="pct">${VV.fmtPct(x.accord)}</span>
       </button></li>`;
@@ -323,7 +323,7 @@
       list.slice(0, 6).map((x) => `<div class="result-row"><span class="stance">${VV.esc(x.sigle)}</span>` +
         `<span class="bar"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>` +
         `<b>${VV.fmtPct(x.accord)}</b></div>`).join("") +
-      `<p style="font-size:.78rem;color:var(--ink-faint);margin:.5rem 0 0">accord pondéré sur les scrutins partagés avec le groupe le plus proche (${VV.fmtNum(list[0]?.n ?? 0)} votes)</p>`;
+      `<p style="font-size:.78rem;color:var(--ink-faint);margin:.5rem 0 0">${VV.fmtNum(list[0]?.accordes ?? 0)} scrutins d'accord sur ${VV.fmtNum(list[0]?.n ?? 0)} scrutins partagés avec le groupe le plus proche (positions déterminées des deux groupes)</p>`;
   }
 
   /* --- détail de paire --- */
@@ -335,7 +335,7 @@
     const rob = state.agreement.robustesse[key];
     const box = document.getElementById("pair-panel");
     if (!stat || stat.accord === null) {
-      box.innerHTML = `<h2>${VV.esc(selected.a)} ↔ ${VV.esc(selected.b)}</h2><p class="loading">Pas assez de votes partagés avec ces filtres.</p>`;
+      box.innerHTML = `<h2>${VV.esc(selected.a)} ↔ ${VV.esc(selected.b)}</h2><p class="loading">Pas assez de scrutins partagés avec ces filtres.</p>`;
       return;
     }
     const ia = sigles.indexOf(selected.a), ib = sigles.indexOf(selected.b);
@@ -358,7 +358,7 @@
       ? "Sur les votes orientés des textes essentiels"
       : selPerimetre.value === "passage" ? "Sur le vote de passage de chaque texte essentiel" : "";
     const bilan = `${selected.a} et ${selected.b} ont voté de la même manière sur ${VV.fmtPct(stat.accord)} ` +
-      `de leurs ${VV.fmtNum(stat.n)} votes partagés` +
+      `de leurs ${VV.fmtNum(stat.n)} scrutins partagés (${VV.fmtNum(stat.accordes)} fois la même chose)` +
       (best ? ` — point de convergence maximal sur « ${VV.esc(best.theme)} » (${VV.fmtPct(best.accord)})` : "") +
       (worst && worst !== best ? `, désaccord maximal sur « ${VV.esc(worst.theme)} » (${VV.fmtPct(worst.accord)}).` : ".");
 
@@ -409,7 +409,7 @@
           <thead><tr><th>Thème</th><th class="num">Votes</th><th class="num">Accord</th></tr></thead>
           <tbody>${rows.map((x) => `<tr><td>${VV.esc(x.theme)}</td><td class="num">${x.n}</td><td class="num">${VV.fmtPct(x.accord)}</td></tr>`).join("")}</tbody>
         </table></div>`
-      : `<p class="loading">Pas assez de votes partagés par thème.</p>`;
+      : `<p class="loading">Pas assez de scrutins partagés par thème.</p>`;
 
     const robBlock = isFiltered() || excludeAbst
       ? `<p class="loading" style="margin:.4rem 0 0">Analyse de robustesse complète disponible sans filtre ni exclusion des abstentions (elle est précalculée sur l'ensemble des votes, abstention comptée comme position).</p>`
@@ -418,7 +418,7 @@
           <div class="r"><b>${VV.fmtPct(rob?.amplitude_min)} – ${VV.fmtPct(rob?.amplitude_max)}</b><span>intervalle selon les méthodes (pondérations, seuils, retrait d'un thème)</span></div>
           <div class="r"><b>${VV.fmtPct(rob?.bootstrap?.p5)} – ${VV.fmtPct(rob?.bootstrap?.p95)}</b><span>intervalle de confiance à 90 % (${rob?.bootstrap?.n_iter || 0} rééchantillonnages)</span></div>
           <div class="r"><b>rangs ${rob?.bootstrap?.rang_p5} – ${rob?.bootstrap?.rang_p95}</b><span>rang de proximité sur 66 paires (1 = le plus proche)</span></div>
-          <div class="r"><b>${stat.n} votes partagés</b><span>poids effectif : ${VV.fmtNum(Math.round(stat.poids))}</span></div>
+          <div class="r"><b>${VV.fmtNum(stat.accordes)} scrutins d'accord</b><span>sur ${VV.fmtNum(stat.n)} scrutins partagés (positions déterminées des deux groupes) · poids effectif : ${VV.fmtNum(Math.round(stat.poids))}</span></div>
         </div>`;
 
     box.innerHTML = `
@@ -458,7 +458,7 @@
     box.querySelector("#partager-paire")?.addEventListener("click", async (event) => {
       const button = event.currentTarget;
       const morceaux = [
-        `${selected.a} ↔ ${selected.b} : ${VV.fmtPct(stat.accord)} d'accord sur ${VV.fmtNum(stat.n)} votes partagés`,
+        `${selected.a} ↔ ${selected.b} : ${VV.fmtPct(stat.accord)} d'accord (${VV.fmtNum(stat.accordes)} scrutins sur ${VV.fmtNum(stat.n)})`,
         `kappa ${kap === null ? "–" : kap.toFixed(2)}`,
       ];
       if (best) morceaux.push(`convergence max « ${best.theme} » (${VV.fmtPct(best.accord)})`);

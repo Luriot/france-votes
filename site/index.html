@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=25">
+  <link rel="stylesheet" href="assets/style.css?v=27">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -118,8 +118,11 @@
     <div class="card">
       <div class="ref-chips" id="ref-chips" role="group" aria-label="Groupe de référence"></div>
       <ul class="rank-list" id="ranking" aria-live="polite"></ul>
-      <p class="fineprint">Lecture : pourcentage d'accord pondéré sur les scrutins où les deux groupes
-      ont une position déterminée, classé du plus proche au plus éloigné.</p>
+      <p class="fineprint">Lecture : pourcentage d'accord pondéré (thème et participation), classé du
+      plus proche au plus éloigné. « X d'accord sur N scrutins » est le compteur brut : N scrutins où
+      les deux groupes ont une position déterminée, dont X où ils ont voté la même chose. Le
+      pourcentage et le compteur peuvent diverger, la pondération donnant plus de poids à certains
+      scrutins.</p>
     </div>
     <div class="card" id="pair-panel" aria-live="polite">
       <p class="loading">Chargement…</p>
@@ -192,7 +195,7 @@
     </div>
   </div>
 </footer>
-<script src="assets/app.js?v=25"></script>
-<script src="assets/compare.js?v=25"></script>
+<script src="assets/app.js?v=27"></script>
+<script src="assets/compare.js?v=27"></script>
 </body>
 </html>

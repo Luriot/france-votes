@@ -141,19 +141,20 @@ const VV = (() => {
     const ia = state.meta.groupes.findIndex((g) => g.sigle === a);
     const ib = state.meta.groupes.findIndex((g) => g.sigle === b);
     const skipAbstention = opts.excludeAbstention === true;
-    let num = 0, den = 0, n = 0;
+    let num = 0, den = 0, n = 0, accordes = 0;
     for (const s of scrutins) {
       const pa = s.p[ia], pb = s.p[ib];
       if (pa === null || pb === null) continue;
       if (skipAbstention && (pa === 0 || pb === 0)) continue;
       n += 1;
+      if (pa === pb) accordes += 1;
       const w = s.b * s.f * Math.min(s.q[ia], s.q[ib]);
       if (w > 0) {
         num += w * (pa === pb ? 1 : 0);
         den += w;
       }
     }
-    return { accord: den > 0 ? num / den : null, n, poids: den };
+    return { accord: den > 0 ? num / den : null, n, accordes, poids: den };
   }
 
   function kappa(scrutins, a, b, opts = {}) {

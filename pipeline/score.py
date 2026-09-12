@@ -215,6 +215,7 @@ def pair_stats(scrutins: list[dict], sigle_a: str, sigle_b: str, scheme: str = "
         "accord": round(agreement, 6) if den > 0 else None,
         "kappa": round(cohen_kappa(ca, cb, shared, observed), 6) if shared else None,
         "n": shared,
+        "accordes": observed,
         "poids": round(den, 3),
     }
 

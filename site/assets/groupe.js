@@ -42,7 +42,7 @@
     <ul class="rank-list">${profile.others.map((x, i) => `<li><a class="rank-row" href="index.html?a=${encodeURIComponent(sigle)}&b=${encodeURIComponent(x.sigle)}">
       <span class="who"><i style="background:${VV.safeColor(x.couleur)}"></i>${i + 1}. ${VV.esc(x.sigle)}
         <span class="full">${VV.esc(x.nom)}</span>
-        <span class="why">${VV.fmtNum(x.n)} votes partagés</span></span>
+        <span class="why" title="Nombre de scrutins où les deux groupes ont voté la même chose, sur le total des scrutins où les deux ont une position déterminée">${VV.fmtNum(x.accordes)} d'accord sur ${VV.fmtNum(x.n)} scrutins</span></span>
       <span class="track"><i style="width:${(x.accord * 100).toFixed(1)}%"></i></span>
       <span class="pct">${VV.fmtPct(x.accord)}</span></a></li>`).join("")}</ul>
     <p class="fineprint">Accord pondéré sur tous les scrutins (calcul principal, abstentions comptées) ;

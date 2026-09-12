@@ -13,13 +13,14 @@ import itertools
 import json
 import math
 import random
+import re
 import sqlite3
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from build_db import CANON_GROUPS
+from build_db import CANON_GROUPS, norm as normalize_text, to_int
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "france-votes.db"
@@ -41,8 +42,8 @@ def load_scrutins(conn: sqlite3.Connection) -> list[dict]:
     scrutins: dict[str, dict] = {}
     rows = conn.execute(
         """
-        SELECT s.uid, s.numero, s.date, s.type_code, s.sort_code, s.titre, s.theme,
-               s.groupes_valides, s.pour, s.contre,
+        SELECT s.uid, s.numero, s.date, s.type_code, s.sort_code, s.type_majorite, s.nbr_requis,
+               s.titre, s.theme, s.groupes_valides, s.pour, s.contre, s.dossier_ref_apparie,
                g.groupe_canonique, g.position_calculee, g.position_officielle,
                g.participation, g.pour, g.contre
         FROM scrutins s
@@ -50,14 +51,17 @@ def load_scrutins(conn: sqlite3.Connection) -> list[dict]:
         ORDER BY s.numero
         """
     )
-    for (uid, numero, date, type_code, sort_code, titre, theme, valides, total_pour, total_contre,
+    for (uid, numero, date, type_code, sort_code, type_majorite, nbr_requis,
+         titre, theme, valides, total_pour, total_contre, dossier,
          sigle, position, position_officielle, participation, g_pour, g_contre) in rows:
         s = scrutins.get(uid)
         if s is None:
             s = scrutins[uid] = {
                 "uid": uid, "numero": numero, "date": date, "type_code": type_code,
-                "sort_code": sort_code, "titre": titre, "theme": theme or UNCLASSIFIED,
-                "groupes_valides": valides, "total_pour": total_pour or 0, "total_contre": total_contre or 0,
+                "sort_code": sort_code, "type_majorite": type_majorite, "nbr_requis": nbr_requis,
+                "titre": titre, "theme": theme or UNCLASSIFIED, "dossier": dossier,
+                "groupes_valides": valides,
+                "total_pour": total_pour or 0, "total_contre": total_contre or 0,
                 "positions": {}, "positions_officielles": {}, "parts": {}, "counts": {},
             }
         if sigle:
@@ -68,16 +72,27 @@ def load_scrutins(conn: sqlite3.Connection) -> list[dict]:
     return list(scrutins.values())
 
 
-def pivots_for(total_pour: int, total_contre: int, counts: dict[str, tuple[int, int]]) -> tuple[int, list[str]]:
-    """Marge (pour − contre) et groupes dont le basculement change à lui seul le résultat."""
-    adopted = total_pour > total_contre
+def pivots_for(total_pour: int, total_contre: int, counts: dict[str, tuple[int, int]],
+               seuil: int | None = None) -> tuple[int, list[str]]:
+    """Écart à la majorité et groupes dont le basculement change à lui seul le résultat.
+
+    Deux règles d'adoption : majorité des suffrages exprimés (`pour > contre`, seuil None) et
+    majorité requise pour une motion de censure (`pour >= seuil`, seuil = voix nécessaires).
+    """
+    if seuil is None:
+        adopted = total_pour > total_contre
+        marge = total_pour - total_contre
+    else:
+        adopted = total_pour >= seuil
+        marge = total_pour - seuil
     pivots = []
     for sigle, (pour, contre) in counts.items():
         new_pour = total_pour - pour + contre
         new_contre = total_contre - contre + pour
-        if (new_pour > new_contre) != adopted:
+        changed = (new_pour > new_contre) != adopted if seuil is None else (new_pour >= seuil) != adopted
+        if changed:
             pivots.append(sigle)
-    return total_pour - total_contre, sorted(pivots)
+    return marge, sorted(pivots)
 
 
 def group_traits(conn: sqlite3.Connection) -> dict[str, dict]:
@@ -332,31 +347,170 @@ def mds_coordinates(pair_matrix: dict) -> list[dict]:
     return [{"sigle": SIGLES[i], "x": coords[i][0], "y": coords[i][1]} for i in range(n)]
 
 
-def questionnaire_items(scrutins: list[dict]) -> list[dict]:
-    by_theme: dict[str, list[tuple[float, dict]]] = defaultdict(list)
+def _entropy(positions: list) -> float:
+    counts = Counter(positions)
+    total = len(positions)
+    return -sum((count / total) * math.log(count / total) for count in counts.values())
+
+
+ARTICLE_PREFIX = re.compile(r"^(?:du|de la|de l'|des|d'|de)\s+", re.I)
+
+
+def title_family(titre: str) -> tuple[str, str] | None:
+    """Extrait (type de texte, nom) d'un titre de passage « l'ensemble … », sinon None.
+
+    Gère les particularités de l'open data : apostrophes typographiques, articles redoublés
+    (« l'ensemble de de la proposition … ») et votes par partie de texte (« deuxième partie du
+    projet de loi … »).
+    """
+    text = (titre or "").replace("\u2019", "'").replace("\u00a0", " ").strip()
+    lowered = text.lower()
+    prefixes = ("l'ensemble du ", "l'ensemble de la ", "l'ensemble de l'", "l'ensemble des ",
+                "l'ensemble d'", "l'ensemble ")
+    for prefix in prefixes:
+        if lowered.startswith(prefix):
+            rest = text[len(prefix):]
+            break
+    else:
+        return None
+    while True:
+        match = ARTICLE_PREFIX.match(rest)
+        if not match:
+            break
+        rest = rest[match.end():]
+    name = re.sub(r"\s+", " ", rest.split(" (")[0].strip().rstrip("."))
+    if not name:
+        return None
+    head = name.lower()[:40]
+    if "projet de loi" in head:
+        return "projet de loi", name
+    if "proposition de loi" in head:
+        return "proposition de loi", name
+    if "proposition de résolution" in head:
+        return "proposition de résolution", name
+    return "texte", name
+
+
+def statement(kind: str, name: str) -> str:
+    """Gabarit mécanique : aucune rédaction, seul le titre officiel est repris."""
+    article = "le" if name.split(" ")[0].lower() in ("projet", "texte", "rapport") else "la"
+    return f"Faut-il adopter {article} {name} ?"
+
+
+VOTE_VALUE = {"pour": 1, "contre": -1, "abstention": 0}
+CORRELATION_MIN_OVERLAP = 6
+CORRELATION_MIN_RATIO = 0.5
+
+
+def _numeric(position) -> int:
+    return VOTE_VALUE.get(position, 0) if position is not None else 0
+
+
+def orientation(scrutin: dict, anchor: dict) -> int | None:
+    """Orientation d'un vote par rapport au vote de passage de son texte (-1, +1 ou None).
+
+    Règle purement calculée : corrélation des positions de groupe avec celles du vote de passage
+    (« l'ensemble du texte »). Un amendement systématiquement voté avec le texte est orienté +1,
+    un vote corrélé négativement −1 ; trop peu de groupes communs ou corrélation faible → None.
+    """
+    common = [sigle for sigle in SIGLES
+              if anchor.get(sigle) is not None and scrutin["positions"].get(sigle) is not None]
+    if len(common) < CORRELATION_MIN_OVERLAP:
+        return None
+    score = sum(_numeric(anchor[sigle]) * _numeric(scrutin["positions"][sigle]) for sigle in common)
+    if abs(score) / len(common) < CORRELATION_MIN_RATIO:
+        return None
+    return 1 if score > 0 else -1
+
+
+def questionnaire_families(scrutins: list[dict], per_theme: int = 3) -> list[dict]:
+    """Questions « Essentiel » : un texte = une question, agrégée sur tous ses votes orientables.
+
+    - Famille = tous les scrutins rattachés au même dossier, avec pour ancre le premier vote de
+      passage (« l'ensemble … »). Chaque vote est orienté par `orientation()` : « pour » signifie
+      toujours « pour ce texte ». Repli sans dossier : regroupement par titre.
+    - Motions de censure : familles propres (art. 49 al. 2 : seuls les votes favorables sont
+      recensés → un groupe absent est encodé « ne soutient pas »).
+    - La déduplication du corpus ne s'applique pas (un vote reste un vote) ; les vecteurs
+      identiques sont neutralisés à l'intérieur d'une famille.
+    - Sélection : entropie moyenne des votes de passage, plafonnée à `per_theme` par thème.
+    """
+    families: dict[str, dict] = {}
+    groups: dict[str, list[dict]] = defaultdict(list)
+    texts: dict[str, tuple[str, str]] = {}
     for s in scrutins:
-        if s["poids_base"] <= 0 or s["theme"] == UNCLASSIFIED:
+        if s.get("indisponible"):
             continue
-        positions = [s["positions"].get(sigle) for sigle in SIGLES]
-        determined = [p for p in positions if p is not None]
-        if len(determined) < 8:
+        title = (s["titre"] or "").replace("\u2019", "'")
+        if title.lower().startswith("la motion de censure"):
+            recoded = ["pour" if p == "pour" else "contre" for p in s["positions"].values()]
+            if len(set(recoded)) == 1:
+                continue
+            family_id = f"moc:{s['uid']}"
+            families[family_id] = {
+                "id": family_id, "theme": "Motions de censure", "kind": "motion de censure",
+                "label": f"Faut-il censurer le gouvernement ? (motion du {s['date']})",
+                "dates": [s["date"]],
+                "votes": [{"u": s["uid"], "n": s["numero"], "d": s["date"], "dir": 1,
+                           "p": [POS_CODE[value] for value in recoded]}],
+                "entropies": [_entropy(recoded)],
+            }
             continue
-        counts = Counter(determined)
-        total = len(determined)
-        entropy = -sum((c / total) * math.log(c / total) for c in counts.values())
-        by_theme[s["theme"]].append((entropy, s))
-    items = []
-    for theme, entries in sorted(by_theme.items()):
-        entries.sort(key=lambda x: (-x[0], x[1]["numero"]))
-        for entropy, s in entries[:3]:
-            items.append({
-                "uid": s["uid"], "numero": s["numero"], "date": s["date"], "theme": theme,
-                "titre": s["titre"], "entropie": round(entropy, 4),
-                "positions": [POS_CODE[s["positions"].get(sigle)] for sigle in SIGLES],
-                "poids": round(s["poids_base"] * s["facteur_theme"], 6),
-                "parts": [round(s["parts"].get(sigle, 0.0), 4) for sigle in SIGLES],
-            })
-    return items
+        parsed = title_family(s["titre"])
+        if s.get("dossier"):
+            key = f"dlr:{s['dossier']}"
+        elif parsed:
+            key = f"titre:{normalize_text(parsed[1])}"
+        else:
+            key = None
+        if key is None:
+            continue
+        groups[key].append(s)
+        if parsed and key not in texts:
+            texts[key] = parsed
+
+    for key, members in groups.items():
+        if key not in texts:
+            continue  # texte sans vote de passage : impossible de l'orienter
+        kind, name = texts[key]
+        passages = [s for s in members if title_family(s["titre"])]
+        anchor = min(passages, key=lambda s: (s["date"], s["numero"]))
+        determined = [p for p in anchor["positions"].values() if p is not None]
+        if len(determined) < 8 or len(set(determined)) == 1 or anchor["theme"] == UNCLASSIFIED:
+            continue
+        votes, vectors = [], set()
+        for s in members:
+            direction = orientation(s, anchor["positions"])
+            if direction is None:
+                continue
+            vector = tuple(s["positions"].get(sigle) for sigle in SIGLES)
+            if vector in vectors:
+                continue
+            vectors.add(vector)
+            votes.append({"u": s["uid"], "n": s["numero"], "d": s["date"], "dir": direction})
+        if not votes:
+            continue
+        entropies = [_entropy([p for p in passage["positions"].values() if p is not None])
+                     for passage in passages]
+        families[key] = {
+            "id": key, "theme": anchor["theme"], "kind": kind, "label": statement(kind, name),
+            "dates": sorted({vote["d"] for vote in votes}),
+            "votes": sorted(votes, key=lambda vote: (vote["d"], vote["n"])),
+            "entropies": entropies,
+        }
+
+    kept: dict[str, list[dict]] = defaultdict(list)
+    for family in families.values():
+        entropies = family.pop("entropies")
+        family["entropie"] = round(sum(entropies) / len(entropies), 4)
+        kept[family["theme"]].append(family)
+
+    out: list[dict] = []
+    for entries in kept.values():
+        entries.sort(key=lambda family: (family["entropie"], family["dates"][-1]), reverse=True)
+        out.extend(entries[:per_theme])
+    out.sort(key=lambda family: (family["theme"], -family["entropie"]))
+    return out
 
 
 def main() -> int:
@@ -415,7 +569,12 @@ def main() -> int:
 
     scrutin_export = []
     for s in sorted(scrutins, key=lambda x: x["numero"]):
-        marge, pivots = pivots_for(s["total_pour"], s["total_contre"], s["counts"])
+        majorite = (s.get("type_majorite") or "").lower()
+        # « suffrages exprimés » → pour > contre ; sinon majorité requise (motion de censure).
+        seuil = None
+        if "suffrages" not in majorite and to_int(s.get("nbr_requis")) > 0:
+            seuil = to_int(s.get("nbr_requis"))
+        marge, pivots = pivots_for(s["total_pour"], s["total_contre"], s["counts"], seuil)
         scrutins_row = {
             "u": s["uid"], "n": s["numero"], "d": s["date"], "t": s["type_code"],
             "r": s["sort_code"], "ti": s["titre"], "th": s["theme"],
@@ -456,7 +615,10 @@ def main() -> int:
             "robustesse": robustness,
             "mds": coords,
         },
-        "questionnaire.json": {"questions": questionnaire_items(scrutins)},
+        "questionnaire.json": {
+            "version": 3,
+            "families": questionnaire_families(scrutins),
+        },
     }
     for name, payload in exports.items():
         path = SITE_DATA / name

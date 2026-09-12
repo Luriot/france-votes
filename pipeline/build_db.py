@@ -185,7 +185,7 @@ PRAGMA synchronous=OFF;
 CREATE TABLE scrutins (
     uid TEXT PRIMARY KEY, numero INTEGER, legislature TEXT, date TEXT,
     session_ref TEXT, seance_ref TEXT, type_code TEXT, type_libelle TEXT,
-    sort_code TEXT, sort_libelle TEXT, titre TEXT, demandeur TEXT,
+    sort_code TEXT, sort_libelle TEXT, type_majorite TEXT, titre TEXT, demandeur TEXT,
     objet_libelle TEXT, dossier_ref TEXT, dossier_libelle TEXT,
     dossier_ref_apparie TEXT, appariement TEXT, theme TEXT, theme_source TEXT,
     mode_publication TEXT, nombre_votants INTEGER, suffrages_exprimes INTEGER,
@@ -239,14 +239,31 @@ def build(conn: sqlite3.Connection) -> dict:
         synthese = s.get("syntheseVote") or {}
         decompte = synthese.get("decompte") or {}
         groupes = as_list(((s.get("ventilationVotes") or {}).get("organe") or {}).get("groupes", {}).get("groupe"))
-        valides = sum(1 for g in groupes if GROUP_ALIASES.get(g.get("organeRef"), g.get("organeRef")) in CANON_REFS)
+        # Open data : parfois la réf d'un groupe est remplacée par « PO0 ». Si une seule est
+        # corrompue et qu'il manque exactement un groupe canonique, c'est lui (récupération par
+        # élimination) ; les scrutins où tous les groupes sont en PO0 restent indisponibles.
+        present = set()
+        po0_rows = []
+        for g in groupes:
+            ref = GROUP_ALIASES.get(g.get("organeRef") or "", g.get("organeRef") or "")
+            if (g.get("organeRef") or "") == "PO0":
+                po0_rows.append(g)
+            elif ref in CANON_REFS:
+                present.add(ref)
+        recovery: dict[int, str] = {}
+        if len(po0_rows) == 1:
+            missing = CANON_REFS - present
+            if len(missing) == 1:
+                recovery[id(po0_rows[0])] = missing.pop()
+        valides = len(present | set(recovery.values()))
         conn.execute(
-            "INSERT INTO scrutins VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO scrutins VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 s["uid"], to_int(s.get("numero")), str(s.get("legislature") or ""), s.get("dateScrutin"),
                 s.get("sessionRef"), s.get("seanceRef"),
                 ((s.get("typeVote") or {}).get("codeTypeVote")), ((s.get("typeVote") or {}).get("libelleTypeVote")),
                 ((s.get("sort") or {}).get("code")), ((s.get("sort") or {}).get("libelle")),
+                ((s.get("typeVote") or {}).get("typeMajorite")),
                 s.get("titre"), ((s.get("demandeur") or {}).get("texte")),
                 ((s.get("objet") or {}).get("libelle")), officiel_ref,
                 (((s.get("objet") or {}).get("dossierLegislatif")) or {}).get("libelle"),
@@ -261,7 +278,7 @@ def build(conn: sqlite3.Connection) -> dict:
             ),
         )
         for g in groupes:
-            raw_ref = g.get("organeRef") or ""
+            raw_ref = recovery.get(id(g)) or (g.get("organeRef") or "")
             canon = GROUP_ALIASES.get(raw_ref, raw_ref)
             canon = SIGLE_BY_REF.get(canon) if canon in CANON_REFS else None
             vote = g.get("vote") or {}

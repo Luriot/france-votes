@@ -7,29 +7,29 @@
       "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip",
       "page": "https://data.assemblee-nationale.fr/travaux-parlementaires/votes",
       "bytes": 26317479,
-      "md5": "d2d62edf46f3544502a815afc623423b",
-      "sha256": "e9df96b2af759070b5c624a1cc6ae91cbc1863b81cfee1f2ea21b60a94ac851f",
-      "retrieved_at": "2026-09-11T23:55:17+00:00"
+      "md5": "755e8e7e46074ee65ce62ac322c90766",
+      "sha256": "9123be3af253805ef8d16b88bb3bf4d29ac6692910b21fc53ac44c39238667a2",
+      "retrieved_at": "2026-09-12T09:01:17+00:00"
     },
     {
       "name": "Dossiers législatifs (AN)",
       "file": "DossiersLegislatifs17.json.zip",
       "url": "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip",
       "page": "https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs",
-      "bytes": 10305544,
-      "md5": "eafdead7c4d6bdae85787a70fbbd6092",
-      "sha256": "eaff79d8349d01d94927b5bd832687144d8b394e15deb373603d12d78a10997e",
-      "retrieved_at": "2026-09-11T23:55:17+00:00"
+      "bytes": 10307987,
+      "md5": "adb398e7ada43aeaf8d01bee4685616e",
+      "sha256": "80167a1ed09942f01811ed018474b6a11590491249d0426b84c227817599701d",
+      "retrieved_at": "2026-09-12T09:02:44+00:00"
     },
     {
       "name": "Dossiers législatifs et thèmes (Sénat, base Dosleg)",
       "file": "senat_dossiers.csv",
       "url": "https://data.senat.fr/data/dosleg/dossiers-legislatifs.csv",
       "page": "https://data.senat.fr/dosleg/",
-      "bytes": 3622331,
-      "md5": "daee9a2ea0ab8225b6f8b2d8d36095f4",
-      "sha256": "9a192b5af288eca2135521d46e0825e407b1dd634cc5e8a2cc334a86988bc640",
-      "retrieved_at": "2026-09-11T23:55:17+00:00"
+      "bytes": 3622719,
+      "md5": "ec34dc618b18a0a3cbc9bae3f04aa085",
+      "sha256": "618d58359c97df086a45b43e5782c97954b6c8a44999119abd43399cc7c4304f",
+      "retrieved_at": "2026-09-12T09:02:46+00:00"
     }
   ]
 }

@@ -157,12 +157,16 @@ class TestExports(unittest.TestCase):
     def test_mds(self):
         self.assertEqual(len(self.agreement["mds"]), 12)
 
-    def test_questionnaire(self):
+    def test_questionnaire_essentiel(self):
         data = json.loads((SITE_DATA / "questionnaire.json").read_text(encoding="utf-8"))
-        self.assertGreater(len(data["questions"]), 20)
-        for q in data["questions"]:
-            self.assertEqual(len(q["positions"]), 12)
-            self.assertTrue(1 <= q["numero"])
+        self.assertEqual(data["version"], 3)
+        self.assertGreater(len(data["families"]), 20)
+        for famille in data["families"]:
+            self.assertTrue(famille["label"].startswith("Faut-il"))
+            self.assertTrue(famille["votes"])
+            for vote in famille["votes"]:
+                self.assertIn(vote["dir"], (1, -1))
+                self.assertTrue(1 <= vote["n"])
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=12">
+  <link rel="stylesheet" href="assets/style.css?v=18">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -113,9 +113,10 @@
     nominatif complet : pour, contre, abstention et non-votants, par groupe et par député.</p>
     <p>Deux exclusions structurelles, sans choix éditorial :</p>
     <ul>
-      <li>14 scrutins (0,17 %) dont les références de groupes sont corrompues dans le flux source
-      (toutes remplacées par un identifiant vide) : ils restent consultables mais ne peuvent pas
-      être attribués à des groupes.</li>
+      <li>12 scrutins (0,14 %) dont <em>toutes</em> les références de groupes sont corrompues dans le
+      flux source (remplacées par un identifiant vide) : ils restent consultables mais ne peuvent pas
+      être attribués à des groupes. Deux autres scrutins, où une seule référence était corrompue,
+      sont récupérés par élimination (le groupe manquant est identifié sans ambiguïté).</li>
       <li>Aucun filtre par thème, par résultat, par « importance » ou par médiatisation.</li>
     </ul>
   </section>
@@ -193,9 +194,10 @@
       <li><strong>Kappa de Cohen</strong> (contrôle) : accord corrigé de ce qui serait obtenu par
       hasard. Il évite qu'un accord élevé soit simplement dû à des votes consensuels où « tout le
       monde vote pour ».</li>
-      <li><strong>Marge et votes décisifs</strong> : pour chaque scrutin, la marge entre pour et
-      contre est calculée, ainsi que les groupes dont le basculement changerait à lui seul le
-      résultat. Affichés dans l'explorateur (« serré », « décisif »).</li>
+      <li><strong>Écart à la majorité et votes décisifs</strong> : pour chaque scrutin, l'écart à la
+      majorité (pour − contre ; pour − seuil requis pour une motion de censure) est calculé, ainsi
+      que les groupes dont le basculement changerait à lui seul le résultat. Affichés dans
+      l'explorateur (« serré », « décisif »).</li>
       <li><strong>Carte MDS</strong> : positionnement en deux dimensions à partir des seuls taux
       d'accord (distance = 1 − accord). Aucun axe n'est interprété politiquement.</li>
     </ul>
@@ -255,13 +257,32 @@
 
   <section class="block" id="questionnaire">
     <h2>12. Questionnaire</h2>
-    <p>Le questionnaire n'invente aucune affirmation : les questions sont des scrutins réels,
-    choisis automatiquement — pour chaque thème, ceux où les positions des groupes sont les plus
-    partagées (entropie maximale). La chaîne est entièrement visible :</p>
-    <pre class="codeblock">votre position → scrutin réel (titre officiel + lien source) → position des groupes
-→ accord pondéré sur vos seules réponses → liste des votes qui pèsent le plus</pre>
-    <p>Le résultat n'est pas une consigne de vote : c'est la liste des groupes dont les votes passés
-    ressemblent le plus à vos réponses sur les scrutins que vous avez renseignés.</p>
+    <p>Le questionnaire n'invente aucune affirmation et n'est jamais rédigé à la main : une question
+    par <em>texte de loi</em>, construite automatiquement.</p>
+    <ul>
+      <li>La famille regroupe tous les votes rattachés au même dossier, orientés automatiquement par
+      corrélation avec le vote de passage du texte (« l'ensemble… ») : un amendement voté comme le
+      texte compte « pour », un vote corrélé négativement est inversé ; trop peu de groupes communs
+      (moins de 6) ou corrélation faible (|r| &lt; 0,5) → vote écarté. Le libellé est un gabarit fixe
+      appliqué au titre officiel : « Faut-il adopter le/la … ? ». Sélection : entropie moyenne des
+      votes de passage, plafonnée à 3 questions par thème ; « Non classé » et votes unanimes exclus ;
+      les vecteurs identiques sont neutralisés à l'intérieur d'une famille.</li>
+      <li>Les <strong>motions de censure</strong> forment leur propre série : l'Assemblée ne recensant
+      que les votes favorables (article 49, alinéa 2), un groupe absent du décompte est encodé
+      « ne soutient pas ».</li>
+      <li><strong>Affinage</strong> — pour un texte, les votes précis restent modifiables un par un :
+      une réponse vote par vote <em>remplace</em> la réponse donnée sur le texte, et reste
+      modifiable.</li>
+    </ul>
+    <p>Chaîne entièrement visible :</p>
+    <pre class="codeblock">votre position → question (texte officiel + lien source) → position des groupes
+→ accord pondéré sur vos seules réponses → votes qui pèsent le plus</pre>
+    <p>Chaque question pèse autant qu'une autre : une réponse est répartie entre les votes de son
+    texte selon le thème (plafond de 15 % sur le poids de base) et la participation du groupe. La
+    déduplication du corpus ne s'applique pas au questionnaire. L'affinage vote par vote reste
+    possible pour les 25 votes les plus significatifs d'un texte ; les autres comptent via la
+    réponse donnée sur le texte. Le résultat n'est pas une consigne de vote : c'est la liste des
+    groupes dont les votes passés ressemblent le plus à vos réponses.</p>
   </section>
 
   <section class="block" id="reproductibilite">
@@ -281,7 +302,7 @@ python -m http.server 8000 --directory site</pre>
     (<code>pipeline/</code>) ; sources, volumes et limites détaillés dans le README du dépôt.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=12"></script>
-<script src="assets/methodologie.js?v=12"></script>
+<script src="assets/app.js?v=18"></script>
+<script src="assets/methodologie.js?v=18"></script>
 </body>
 </html>

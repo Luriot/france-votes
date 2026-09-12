@@ -84,7 +84,7 @@
             <span class="badge neutre">${VV.esc(TYPES[s.t] || s.t)}</span>
             ${s.b === 0 ? `<span class="badge neutre" title="Vecteur de positions identique à un autre scrutin, neutralisé dans les scores">doublon</span>` : ""}
             ${s.ind ? `<span class="badge neutre">données groupes indisponibles</span>` : ""}
-            ${Math.abs(s.m) <= 10 ? `<span class="badge neutre" title="Marge pour − contre">serré · ${s.m > 0 ? "+" : ""}${s.m}</span>` : ""}
+            ${Math.abs(s.m) <= 10 ? `<span class="badge neutre" title="Écart à la majorité (pour − contre ; pour − seuil requis pour une motion de censure)">serré · ${s.m > 0 ? "+" : ""}${s.m}</span>` : ""}
             ${s.pv?.length ? `<span class="badge neutre" title="Groupe(s) dont le basculement changerait à lui seul le résultat">décisif : ${s.pv.slice(0, 3).map((i) => VV.esc(sigles[i])).join(", ")}${s.pv.length > 3 ? "…" : ""}</span>` : ""}
           </div>
         </td>

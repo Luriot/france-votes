@@ -57,8 +57,9 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
 - **Explorer les votes** : les 8 434 scrutins filtrables (thème, période, type, position d'un
   groupe, recherche plein texte), tri par serrage, badges « serré » et « décisif » (marge et
   groupes dont le basculement change le résultat), export CSV, chacun relié à sa page officielle.
-- **Questionnaire** : questions issues automatiquement des scrutins les plus discriminants par
-  thème ; l'utilisateur voit les votes qui pèsent sur son résultat.
+- **Questionnaire** : une question par texte de loi, générée depuis le titre officiel et agrégée
+  sur tous ses votes ; **affinage vote par vote** possible pour chaque texte ; l'utilisateur voit
+  les votes qui pèsent sur son résultat.
 - **Sur téléphone** : design responsive (testé jusqu'à 320 px), cibles tactiles ≥ 44 px, et
   **PWA installable** (« Ajouter à l'écran d'accueil ») avec consultation **hors-ligne** des
   dernières données ; image de partage dédiée (`og.png`) pour les réseaux.

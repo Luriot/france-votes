@@ -367,6 +367,10 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 /* --- questionnaire --- */
 
 .q-item { background: var(--chalk); border: var(--border) solid color-mix(in srgb, var(--ink) 16%, transparent); border-radius: var(--radius-main); padding: 1.1rem 1.2rem; margin-bottom: var(--gap); }
+.q-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0 0 0.45rem; }
+.vote-list { margin: 0.4rem 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.86rem; }
+.vote-list .date { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
+.affiner { margin-top: 0.55rem; }
 .q-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.6rem; }
 .result-row { display: grid; grid-template-columns: 4.6rem 1fr 4.6rem; gap: 0.7rem; align-items: center; margin-bottom: 0.4rem; }
 .result-row .bar { height: 0.9rem; border-radius: 100vw; background: var(--inset); overflow: hidden; }

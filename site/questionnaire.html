@@ -18,7 +18,7 @@
   <meta property="og:image" content="assets/og.png">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="assets/style.css?v=12">
+  <link rel="stylesheet" href="assets/style.css?v=18">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -49,20 +49,24 @@
 
 <main id="contenu" class="wrap">
   <h1>Questionnaire sur des votes réels</h1>
-  <p>Pas d'affirmations inventées : chaque question est un scrutin qui a réellement eu lieu.
-  Votre réponse est comparée aux votes des groupes sur <em>ce même scrutin</em>. Vous voyez ensuite
-  exactement quels votes ont le plus pesé dans le résultat.</p>
+  <p>Pas d'affirmations inventées : chaque question est un texte de loi qui a réellement été voté à
+  l'Assemblée. Vous pouvez répondre d'un geste, puis <strong>affiner vote par vote</strong> si vous
+  le souhaitez.</p>
 
   <details class="aide" open>
     <summary>Comment ça marche, exactement ?</summary>
     <ol class="list-tight">
-      <li>Les questions sont choisies <strong>automatiquement</strong> : pour chaque thème, les scrutins
-      où les groupes sont les plus partagés (entropie la plus élevée). Aucun choix éditorial.</li>
-      <li>« Pour » = voter pour le texte ou l'amendement tel que formulé à l'Assemblée ; le titre
-      officiel et le lien source sont affichés pour chaque question.</li>
+      <li>Une question par texte de loi, construite automatiquement à partir de <em>tous</em> les
+      votes rattachés à ce texte (orientés par corrélation avec le vote de passage). Le libellé
+      reprend le titre officiel, aucun texte n'est rédigé à la main. Pour les motions de censure,
+      l'Assemblée ne recense que les votes favorables : « Contre » signifie que le groupe ne l'a pas
+      soutenue.</li>
+      <li>« Affiner » ouvre les votes précis du texte : votre réponse vote par vote remplace la
+      réponse donnée sur le texte, et reste modifiable.</li>
       <li>Le résultat est un taux d'accord pondéré entre vos réponses et les positions des groupes,
-      sur les seuls scrutins que vous avez renseignés. Un vote pèse selon son thème (maximum 15 % du
-      poids total par thème) et selon la participation du groupe à ce vote.</li>
+      sur les seuls votes que vous avez renseignés. Chaque question pèse autant qu'une autre ; un
+      vote pèse selon son thème (plafond de 15 % sur le poids de base par thème) et selon la
+      participation du groupe à ce vote.</li>
       <li>Vous pouvez tout modifier, passer des questions, et ouvrir le détail des votes qui pèsent
       positivement ou négativement.</li>
     </ol>
@@ -81,7 +85,7 @@
     les positions des groupes sont recalculées depuis les listes de vote nominatives.</p>
   </div>
 </footer>
-<script src="assets/app.js?v=12"></script>
-<script src="assets/questionnaire.js?v=12"></script>
+<script src="assets/app.js?v=18"></script>
+<script src="assets/questionnaire.js?v=18"></script>
 </body>
 </html>

@@ -76,9 +76,20 @@ const themes = new Set(VV.state.scrutins.map((s) => s.th));
 check("thèmes exportés non vides", themes.size >= 20, `${themes.size} thèmes`);
 
 const q = JSON.parse(files["questionnaire.json"]);
-check("questionnaire : positions sur 12 groupes", q.questions.every((x) => x.positions.length === 12));
-check("questionnaire : poids > 0", q.questions.every((x) => x.poids >= 0));
-check("questionnaire : scrutins présents dans scrutins.json", q.questions.every((x) => scrutinsByUid.has(x.uid)));
+check("questionnaire v3 : familles essentielles", q.version === 3 && q.families.length >= 20, `${q.families?.length} familles`);
+check("familles : votes existants dans scrutins.json",
+  q.families.every((f) => f.votes.every((v) => scrutinsByUid.has(v.u))));
+check("familles : directions ±1", q.families.every((f) => f.votes.every((v) => v.dir === 1 || v.dir === -1)));
+const famPerTheme = {};
+for (const f of q.families) famPerTheme[f.theme] = (famPerTheme[f.theme] || 0) + 1;
+check("familles : plafond de 3 par thème", Object.values(famPerTheme).every((n) => n <= 3));
+check("familles : libellés générés depuis les titres officiels",
+  q.families.every((f) => f.label.startsWith("Faut-il")));
+const mocs = q.families.filter((f) => f.kind === "motion de censure");
+check("motions de censure encodées (±1, jamais nulles)",
+  mocs.length >= 3 && mocs.every((f) => f.votes[0].p.every((p) => p === 1 || p === -1)));
+const famVotes = q.families.reduce((acc, f) => acc + f.votes.length, 0);
+check("familles : agrégation des votes des textes (> 500 votes)", famVotes > 500, `${famVotes} votes`);
 check("marge exportée pour chaque scrutin", VV.state.scrutins.every((s) => Number.isInteger(s.m)));
 check("pivots valides", VV.state.scrutins.every((s) => Array.isArray(s.pv) && s.pv.every((i) => i >= 0 && i < 12)));
 check("effectifs et cohésion exportés",
@@ -100,8 +111,7 @@ check("stance résiste à une valeur inconnue", VV.stance("evil").includes("n.d.
 
 // Garde-fous de contrat : les pages consomment les clés réellement exportées…
 const questionnaireSrc = await readFile(new URL("../site/assets/questionnaire.js", import.meta.url), "utf8");
-check("questionnaire.js lit 'numero' (pas 'n')",
-  questionnaireSrc.includes("q.numero") && !/\bq\.n\b/.test(questionnaireSrc));
+check("questionnaire.js n'utilise pas la clé inexistante 'q.n'", !/\bq\.n\b/.test(questionnaireSrc));
 
 // …et le versionnage des assets reste identique sur les 4 pages (sinon cache servi périmé).
 const pages = ["index.html", "votes.html", "questionnaire.html", "methodologie.html"];

@@ -35,7 +35,8 @@
   `VV.pairKey()`, jamais `.sort()`.
 - Thèmes = base Dosleg du Sénat uniquement (premier thème de la liste retenu, 24 libellés courts ;
   l'open data AN n'expose pas d'`indexation` en législature 17) ; UDR = fusion
-  `PO847173`/`PO872880`/`PO845520` ; 14 scrutins `PO0` exclus.
+  `PO847173`/`PO872880`/`PO845520` ; 12 scrutins aux réfs de groupes toutes corrompues (`PO0`)
+  exclus (2 autres, à une seule réf corrompue, sont récupérés par élimination).
 
 ## Front & sécurité
 

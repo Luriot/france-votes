@@ -173,6 +173,15 @@ class TestPivots(unittest.TestCase):
         self.assertEqual(marge, 2)
         self.assertEqual(pivots, [])
 
+    def test_pivot_motion_de_censure(self):
+        # Seuil des membres : la marge est l'écart au seuil, pas pour − contre.
+        marge, pivots = score.pivots_for(290, 0, {"RN": (20, 0)}, seuil=289)
+        self.assertEqual(marge, 1)
+        self.assertEqual(pivots, ["RN"])
+        marge, pivots = score.pivots_for(320, 0, {"RN": (20, 0)}, seuil=289)
+        self.assertEqual(marge, 31)
+        self.assertEqual(pivots, [])
+
 
 class TestAllPairs(unittest.TestCase):
     def test_cles_canoniques(self):
@@ -184,24 +193,119 @@ class TestAllPairs(unittest.TestCase):
         self.assertIn("UDR|NI", pairs)
 
 
-class TestQuestionnaire(unittest.TestCase):
-    def _scrutin(self, split, theme, base=1.0):
-        positions = {sigle: ("pour" if i < split else "contre") for i, sigle in enumerate(score.SIGLES)}
-        s = make_scrutin(positions, theme=theme, base=base)
-        s.update({"numero": 1, "date": "2025-01-01", "titre": "t",
-                  "parts": {sigle: 1.0 for sigle in score.SIGLES}})
+class TestFamillesEssentielles(unittest.TestCase):
+    def test_extraction_du_texte(self):
+        self.assertEqual(
+            score.title_family("l'ensemble du projet de loi de finances pour 2026 (première lecture)."),
+            ("projet de loi", "projet de loi de finances pour 2026"))
+        self.assertEqual(
+            score.title_family("l’ensemble de la proposition de loi relative au droit à l’aide à mourir (deuxième lecture)."),
+            ("proposition de loi", "proposition de loi relative au droit à l'aide à mourir"))
+        self.assertEqual(
+            score.title_family("l'ensemble de la proposition de résolution tendant à créer une commission d'enquête (texte de la CMP)."),
+            ("proposition de résolution", "proposition de résolution tendant à créer une commission d'enquête"))
+        self.assertIsNone(score.title_family("l'amendement n° 5 à l'article premier du projet de loi X (première lecture)."))
+
+    def test_gabarit_de_question(self):
+        self.assertEqual(score.statement("projet de loi", "projet de loi de finances pour 2026"),
+                         "Faut-il adopter le projet de loi de finances pour 2026 ?")
+        self.assertEqual(score.statement("proposition de loi", "proposition de loi relative à l'aide à mourir"),
+                         "Faut-il adopter la proposition de loi relative à l'aide à mourir ?")
+
+    def test_cas_particuliers_open_data(self):
+        # Article redoublé dans le titre source (« de de la ») et vote par partie de texte.
+        self.assertEqual(
+            score.title_family("l'ensemble de de la proposition de loi instaurant des réponses (première lecture)."),
+            ("proposition de loi", "proposition de loi instaurant des réponses"))
+        self.assertEqual(
+            score.title_family("l'ensemble de la deuxième partie du projet de loi de finances pour 2026 (première lecture)."),
+            ("projet de loi", "deuxième partie du projet de loi de finances pour 2026"))
+        self.assertEqual(score.statement("projet de loi", "deuxième partie du projet de loi de finances pour 2026"),
+                         "Faut-il adopter la deuxième partie du projet de loi de finances pour 2026 ?")
+
+    def _ensemble(self, uid, numero, date, titre, theme="Budget", positions=None, base=1.0, dossier=None):
+        s = make_scrutin(positions or {sigle: ("pour" if i < 6 else "contre")
+                                       for i, sigle in enumerate(score.SIGLES)}, theme=theme, base=base)
+        s.update({"uid": uid, "numero": numero, "date": date, "titre": titre, "dossier": dossier})
         return s
 
-    def test_selection_par_entropie(self):
-        serre = self._scrutin(6, "Budget")          # entropie maximale
-        tranche = self._scrutin(11, "Budget")       # peu discriminant
-        unclassified = self._scrutin(6, "Non classé")
-        doublon = self._scrutin(6, "Budget", base=0.0)
-        items = score.questionnaire_items([serre, tranche, unclassified, doublon])
-        self.assertEqual([item["uid"] for item in items], [serre["uid"], tranche["uid"]])
-        self.assertEqual(len(items[0]["positions"]), len(score.SIGLES))
-        for champ in ("numero", "date", "titre", "theme", "entropie", "poids", "parts"):
-            self.assertIn(champ, items[0])
+    def test_orientation_par_correlation(self):
+        anchor = make_scrutin({sigle: ("pour" if i < 6 else "contre") for i, sigle in enumerate(score.SIGLES)})
+        proche = {sigle: ("contre" if i in (0, 1) else "pour" if i < 6 else "contre")
+                  for i, sigle in enumerate(score.SIGLES)}
+        inverse = {sigle: ("contre" if i < 6 else "pour") for i, sigle in enumerate(score.SIGLES)}
+        flou = {sigle: ("contre" if i < 3 or 6 <= i < 9 else "pour") for i, sigle in enumerate(score.SIGLES)}
+        self.assertEqual(score.orientation({"positions": proche}, anchor["positions"]), 1)
+        self.assertEqual(score.orientation({"positions": inverse}, anchor["positions"]), -1)
+        self.assertIsNone(score.orientation({"positions": flou}, anchor["positions"]),
+                          "corrélation quasi nulle → orientation indéterminée")
+
+    def test_famille_agrege_les_votes_du_dossier(self):
+        base = {sigle: ("pour" if i < 6 else "contre") for i, sigle in enumerate(score.SIGLES)}
+        proche = {sigle: ("contre" if i in (0, 1) else "pour" if i < 6 else "contre")
+                  for i, sigle in enumerate(score.SIGLES)}
+        inverse = {sigle: ("contre" if i < 6 else "pour") for i, sigle in enumerate(score.SIGLES)}
+        scrutin = self._ensemble("A1", 1, "2025-01-01", "l'ensemble du projet de loi Test (première lecture).",
+                                 positions=base, dossier="DLR1")
+        amendement_pro = self._ensemble("A2", 2, "2025-01-02", "l'amendement n° 1 à l'article premier du projet de loi Test.",
+                                        positions=proche, dossier="DLR1")
+        amendement_anti = self._ensemble("A3", 3, "2025-01-03", "l'amendement n° 2 de suppression à l'article 2 du projet de loi Test.",
+                                         positions=inverse, dossier="DLR1")
+        sans_lien = self._ensemble("A4", 4, "2025-01-04", "le sous-amendement n° 3 à l'amendement n° 2.",
+                                   positions=inverse, dossier="DLR2")
+        familles = score.questionnaire_families([scrutin, amendement_pro, amendement_anti, sans_lien])
+        famille = next(f for f in familles if f["id"] == "dlr:DLR1")
+        votes = {vote["u"]: vote["dir"] for vote in famille["votes"]}
+        self.assertEqual(votes, {"A1": 1, "A2": 1, "A3": -1})
+        self.assertEqual(len(familles), 1, "un dossier sans vote de passage ne donne pas de question essentielle")
+
+    def test_familles_et_plafond(self):
+        serre = {sigle: ("pour" if i < 6 else "contre") for i, sigle in enumerate(score.SIGLES)}
+        tranche = {sigle: ("pour" if i < 9 else "contre") for i, sigle in enumerate(score.SIGLES)}
+        scrutins = [
+            self._ensemble("U1", 10, "2025-01-01", "l'ensemble du projet de loi A (première lecture).", positions=serre),
+            self._ensemble("U2", 11, "2025-06-01", "l'ensemble du projet de loi A (nouvelle lecture).", positions=tranche),
+            self._ensemble("U3", 12, "2025-07-01", "l'ensemble du projet de loi A (lecture définitive).", positions=serre),
+            self._ensemble("U4", 13, "2025-02-01", "l'ensemble du projet de loi B (première lecture).", positions=tranche),
+            self._ensemble("U5", 14, "2025-03-01", "l'ensemble du projet de loi C (première lecture).", positions=tranche),
+            self._ensemble("U6", 15, "2025-04-01", "l'ensemble du projet de loi D (première lecture).", positions=tranche),
+            self._ensemble("U7", 16, "2025-05-01", "l'ensemble du projet de loi E (première lecture).", theme="Non classé"),
+        ]
+        doublon_corpus = self._ensemble("U8", 17, "2025-05-02", "l'ensemble du projet de loi F (première lecture).",
+                                        positions=tranche, base=0.0)
+        indisponible = self._ensemble("U9", 18, "2025-05-03", "l'ensemble du projet de loi G (première lecture).")
+        indisponible["indisponible"] = True
+        scrutins += [doublon_corpus, indisponible]
+
+        familles = score.questionnaire_families(scrutins)
+        ids = {famille["id"] for famille in familles}
+        famille_a = next(f for f in familles if f["label"] == "Faut-il adopter le projet de loi A ?")
+        # U3 a le même vecteur que U1 : neutralisé à l'intérieur de la famille.
+        self.assertEqual([vote["u"] for vote in famille_a["votes"]], ["U1", "U2"])
+        self.assertEqual(famille_a["votes"][0]["dir"], 1)
+        self.assertIn("titre:projet de loi f", ids, "un doublon de corpus reste un vote de passage valable")
+        self.assertNotIn("titre:projet de loi e", ids, "« Non classé » exclu")
+        self.assertNotIn("titre:projet de loi g", ids, "scrutin indisponible exclu")
+        self.assertEqual(len(familles), 3, "plafond de 3 familles pour le thème Budget")
+
+    def test_motions_de_censure(self):
+        # Seuls les votes favorables sont recensés par l'AN : les groupes absents sont encodés
+        # « ne soutient pas » (p = -1) pour que la question soit comptable.
+        positions = {sigle: ("pour" if i < 6 else None) for i, sigle in enumerate(score.SIGLES)}
+        moc = self._ensemble("M1", 20, "2025-10-16",
+                             "la motion de censure déposée en application de l'article 49, alinéa 2, "
+                             "de la Constitution par Mme X et 58 députés.",
+                             theme="Non classé", positions=positions)
+        familles = score.questionnaire_families([moc])
+        self.assertEqual(len(familles), 1)
+        famille = familles[0]
+        self.assertEqual(famille["id"], "moc:M1")
+        self.assertEqual(famille["theme"], "Motions de censure")
+        self.assertIn("censurer", famille["label"])
+        codes = famille["votes"][0]["p"]
+        self.assertEqual(len(codes), len(score.SIGLES))
+        self.assertEqual(sorted(set(codes)), [-1, 1])
+        self.assertEqual(sum(1 for code in codes if code == 1), 6)
 
 
 if __name__ == "__main__":

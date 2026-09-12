@@ -61,15 +61,6 @@
       : rows.sort((a, b) => b.n - a.n);
   }
 
-  function chips(s) {
-    return sigles.map((sigle, i) => {
-      const p = s.p[i];
-      const cls = p === 1 ? "pos-pour" : p === -1 ? "pos-contre" : p === 0 ? "pos-abstention" : "pos-absent";
-      const label = p === 1 ? "pour" : p === -1 ? "contre" : p === 0 ? "abstention" : "non déterminée";
-      return `<span title="${VV.esc(sigle)} : ${label}" style="display:inline-block;width:.62rem;height:.62rem;margin-right:2px;border-radius:2px" class="${cls}"></span>`;
-    }).join("");
-  }
-
   function render() {
     const rows = filtered();
     elCount.textContent = `${VV.fmtNum(rows.length)} scrutins correspondent aux filtres` +
@@ -88,7 +79,7 @@
             ${s.pv?.length ? `<span class="badge neutre" title="Groupe(s) dont le basculement changerait à lui seul le résultat">décisif : ${s.pv.slice(0, 3).map((i) => VV.esc(sigles[i])).join(", ")}${s.pv.length > 3 ? "…" : ""}</span>` : ""}
           </div>
         </td>
-        <td>${chips(s)}</td>
+        <td>${VV.positionChips(s)}</td>
         <td class="num"><strong>${VV.esc(s.r || "–")}</strong></td>
       </tr>`).join("");
     elMore.hidden = rows.length <= limit;

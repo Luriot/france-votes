@@ -68,8 +68,9 @@ Variante plugin **Compose** : `docker compose up -d` avec le `docker-compose.yml
 - **Fraîcheur** : contrôle automatique chaque nuit. Si l'AN ou le Sénat a publié, une image
   fraîche est poussée sur GHCR le lendemain matin ; Watchtower la tire automatiquement. Sans
   Watchtower, faire un **Force Update** de temps en temps. Il n'y a aucune écriture côté serveur.
-- **Vérifier la fraîcheur** : le ruban de couverture affiche « données AN au … » (date du dernier
-  scrutin publié) ; `data/derniere_execution.json` (pipeline local) trace le dernier contrôle.
+- **Vérifier la fraîcheur** : le ruban de couverture affiche « données AN au … » (date de
+  construction des données) ; `data/derniere_execution.json` (pipeline local) trace le dernier
+  contrôle et son résultat.
 
 ---
 
@@ -88,7 +89,7 @@ vider le cache du site (ou désinstaller/réinstaller l'app).
 
 **Image de partage** : `og:image` pointe vers `assets/og.png` en relatif. Pour un aperçu fiable
 chez tous les crawlers (Twitter/X, Facebook, LinkedIn), remplacer par l'URL absolue de ton domaine
-dans les 4 pages HTML (`content="https://ton-domaine.tld/assets/og.png"`). L'icône source est
+dans les 5 pages HTML (`content="https://ton-domaine.tld/assets/og.png"`). L'icône source est
 conservée dans `deploy/icon-source.png` ; les tailles dérivées (192, 180 iOS, 512) se régénèrent
 avec n'importe quel outil de redimensionnement PNG, ou en la redéposant sur `site/assets/`.
 

@@ -2,27 +2,31 @@
    Après une modification d'asset : incrémenter ?v=N dans les pages (les URL changent)
    et, si la liste SHELL change, incrémenter VERSION ici. */
 
-const VERSION = "v3";
+const VERSION = "v5";
 const SHELL_CACHE = `fv-shell-${VERSION}`;
 const DATA_CACHE = `fv-data-${VERSION}`;
 const SHELL = [
   "./",
   "./index.html",
   "./votes.html",
+  "./derniers.html",
   "./questionnaire.html",
   "./methodologie.html",
   "./manifest.webmanifest",
   "./assets/icon-192.png",
 ];
 
-// Pré-cache la coquille + les assets versionnés lus dans index.html (découvre ?v=N tout seul).
+// Pré-cache la coquille + les assets versionnés lus dans les pages HTML (découvre ?v=N tout seul).
 async function precache() {
   const cache = await caches.open(SHELL_CACHE);
   await cache.addAll(SHELL);
   try {
-    const html = await (await fetch("./index.html", { cache: "no-cache" })).text();
-    const assets = [...html.matchAll(/(?:src|href)="([^"]+\.(?:css|js)(?:\?v=\d+)?)"/g)].map((m) => m[1]);
-    await cache.addAll([...new Set(assets)]);
+    const assets = new Set();
+    for (const page of SHELL.filter((url) => url.endsWith(".html") || url === "./")) {
+      const html = await (await fetch(page, { cache: "no-cache" })).text();
+      for (const m of html.matchAll(/(?:src|href)="([^"]+\.(?:css|js)(?:\?v=\d+)?)"/g)) assets.add(m[1]);
+    }
+    await cache.addAll([...assets]);
   } catch {
     /* installation hors-ligne : le cache se remplira à la première visite en ligne */
   }

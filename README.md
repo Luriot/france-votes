@@ -57,6 +57,10 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
 - **Explorer les votes** : les 8 434 scrutins filtrables (thème, période, type, position d'un
   groupe, recherche plein texte), tri par serrage, badges « serré » et « décisif » (marge et
   groupes dont le basculement change le résultat), export CSV, chacun relié à sa page officielle.
+- **Derniers votes** : fil des 60 scrutins les plus récents, groupés par séance, avec résultat,
+  marge, groupes décisifs et position des douze groupes ; résumé des 30 derniers jours de séance
+  **partageable** ; un badge « nouveau » marque ce qui a été publié depuis votre dernière visite
+  (mémoire locale uniquement, rien n'est envoyé).
 - **Questionnaire** : une question par texte de loi, générée depuis le titre officiel et agrégée
   sur tous ses votes ; **affinage vote par vote** possible pour chaque texte ; résultat
   **partageable** (bouton Partager natif / lien `?r=…`, vue allégée pour capture d'écran) et
@@ -66,7 +70,7 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
   dernières données ; image de partage dédiée (`og.png`) pour les réseaux.
 - **Méthodologie** : toutes les règles et les limites, en clair.
 
-## Instantané des données (build du 11/09/2026)
+## Instantané des données (build du 12/09/2026)
 
 | Élément | Valeur vérifiée |
 |---|---|
@@ -75,7 +79,7 @@ Toutes les règles de la méthodologie et l'audit des sources sont documentés s
 | Cellules groupe × scrutin | 101 208 (12 groupes à chaque scrutin) |
 | Scrutins rattachés à un dossier | 8 078 (95,8 %) |
 | Scrutins thématisés (Sénat) | 7 822 (92,7 %) |
-| Votes distincts après déduplication | 3 150 |
+| Votes distincts après déduplication | 3 148 |
 | Paire la plus proche | RN–UDR : 83,9 % d'accord |
 | Paire la plus éloignée | ECOS–UDR : 21,6 % |
 | Kappa médian des 66 paires | 0,12 |

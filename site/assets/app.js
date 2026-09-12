@@ -255,6 +255,16 @@ const VV = (() => {
     return `${s.d.slice(0, 4)}-${Number(s.d.slice(5, 7)) <= 6 ? "H1" : "H2"}`;
   }
 
+  // Pastilles de position des 12 groupes (vert pour, rouge contre, ocre abstention, gris n.d.).
+  function positionChips(s) {
+    return state.meta.groupes.map((g, i) => {
+      const p = s.p[i];
+      const cls = p === 1 ? "pos-pour" : p === -1 ? "pos-contre" : p === 0 ? "pos-abstention" : "pos-absent";
+      const label = p === 1 ? "pour" : p === -1 ? "contre" : p === 0 ? "abstention" : "position non déterminée";
+      return `<span class="pos-chip ${cls}" title="${esc(g.sigle)} : ${label}"></span>`;
+    }).join("");
+  }
+
   function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -286,7 +296,7 @@ const VV = (() => {
   return {
     loadJSON, loadAll, loadRibbon, get state() { return state; },
     fmtPct, fmtDate, fmtNum, sourceUrl, pairStats, allPairs, pairKey, kappa, heatColor, textOn,
-    stance, esc, safeColor, period, setText, renderRibbon, initSignature,
+    stance, esc, safeColor, period, setText, renderRibbon, initSignature, positionChips,
     encodeAnswers, decodeAnswers, share,
   };
 })();

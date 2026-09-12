@@ -353,6 +353,7 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 .vote-title a { color: var(--ink); text-decoration: none; font-weight: 500; }
 .vote-title a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 .filters-result { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); margin: 0.2rem 0 0.9rem; }
+.pos-chip { display: inline-block; width: 0.62rem; height: 0.62rem; margin-right: 2px; border-radius: 2px; }
 .pos-pour { background: var(--pour); } .pos-contre { background: var(--contre); }
 .pos-abstention { background: var(--abstention); } .pos-absent { background: var(--absent); }
 .stance {
@@ -363,6 +364,22 @@ table.data code { font-family: var(--font-mono); font-size: 0.82em; }
 .stance[data-p="-1"] { background: color-mix(in srgb, var(--contre) 16%, var(--chalk)); color: var(--contre); }
 .stance[data-p="0"] { background: color-mix(in srgb, var(--abstention) 18%, var(--chalk)); color: var(--abstention); }
 .stance[data-p="n"] { color: var(--ink-faint); }
+
+/* --- derniers votes --- */
+
+#resume h2 { margin-top: 0; }
+.banner-neuf { background: var(--lime); border-radius: var(--radius-small); padding: 0.7rem 0.95rem; margin: 0 0 var(--gap); }
+.flux-jour { font-size: 0.95rem; margin: 1.3rem 0 0.2rem; color: var(--ink-soft); }
+.flux-jour:first-child { margin-top: 0; }
+.flux-item { border-top: var(--border) solid color-mix(in srgb, var(--ink) 12%, transparent); padding: 0.75rem 0; }
+.flux-item h3 { font-size: 1.02rem; font-weight: 600; margin: 0 0 0.35rem; }
+.flux-item h3 a { color: var(--ink); text-decoration: none; }
+.flux-item h3 a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+.flux-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0 0 0.3rem; }
+.flux-positions { margin: 0; }
+.badge.adopte { background: color-mix(in srgb, var(--pour) 16%, var(--chalk)); }
+.badge.rejete { background: color-mix(in srgb, var(--contre) 14%, var(--chalk)); }
+.badge.neuf { background: var(--lime); }
 
 /* --- questionnaire --- */
 

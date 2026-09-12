@@ -122,13 +122,17 @@ check("safeColor rejette une valeur injectée",
 check("sourceUrl ne garde que les chiffres",
   VV.sourceUrl({ n: '12"><script>alert(1)</script>' }) === "https://www.assemblee-nationale.fr/dyn/17/scrutins/121");
 check("stance résiste à une valeur inconnue", VV.stance("evil").includes("n.d."));
+const chipHtml = VV.positionChips({ p: [1, -1, 0, null, 1, 1, 1, 1, 1, 1, 1, 1] });
+check("pastilles de position : 12 groupes, classes colorées",
+  (chipHtml.match(/pos-chip/g) || []).length === 12
+  && chipHtml.includes("pos-contre") && chipHtml.includes("pos-absent"));
 
 // Garde-fous de contrat : les pages consomment les clés réellement exportées…
 const questionnaireSrc = await readFile(new URL("../site/assets/questionnaire.js", import.meta.url), "utf8");
 check("questionnaire.js n'utilise pas la clé inexistante 'q.n'", !/\bq\.n\b/.test(questionnaireSrc));
 
-// …et le versionnage des assets reste identique sur les 4 pages (sinon cache servi périmé).
-const pages = ["index.html", "votes.html", "questionnaire.html", "methodologie.html"];
+// …et le versionnage des assets reste identique sur les 5 pages (sinon cache servi périmé).
+const pages = ["index.html", "votes.html", "derniers.html", "questionnaire.html", "methodologie.html"];
 const versions = new Map();
 for (const page of pages) {
   const html = await readFile(new URL(`../site/${page}`, import.meta.url), "utf8");
